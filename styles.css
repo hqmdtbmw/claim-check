@@ -21,8 +21,7 @@ main {
   letter-spacing: -0.02em;
 }
 
-.hero mark,
-.signals mark {
+.hero mark {
   background: #f5c518;
   color: #111212;
   padding: 0 4px;
@@ -157,7 +156,12 @@ button[type="submit"]:disabled { opacity: 0.6; cursor: wait; }
 
 .evidence a { font-weight: 700; color: #111212; }
 
-.keywords, .signals { font-size: 0.9rem; color: #555; }
+.why {
+  font-size: 0.9rem;
+  color: #555;
+  border-left: 3px solid #f5c518;
+  padding-left: 10px;
+}
 
 .disclaimer {
   font-size: 0.9rem;

@@ -8,6 +8,7 @@ import {
   classifyEvidence,
   decodeClaimFromHash,
   encodeClaimInHash,
+  explainStance,
   extractKeywords,
   isDisambiguationPage,
   loadHistory,
@@ -209,16 +210,6 @@ function renderVerdict(claim, verdict, classified) {
 
   const cards = classified
     .map((item) => {
-      const signals = item.signals.length
-        ? `<p class="signals">Flagged phrases: ${item.signals
-            .map((s) => `<mark>${escapeHtml(s)}</mark>`)
-            .join(" ")}</p>`
-        : "";
-      const keywords = item.matchedKeywords.length
-        ? `<p class="keywords">Mentions: ${item.matchedKeywords
-            .map(escapeHtml)
-            .join(", ")}</p>`
-        : "";
       return `
       <article class="evidence ${item.stance}">
         <header>
@@ -226,8 +217,7 @@ function renderVerdict(claim, verdict, classified) {
           <span class="stance">${STANCE_LABEL[item.stance]}</span>
         </header>
         <p>${escapeHtml(item.extract)}</p>
-        ${keywords}
-        ${signals}
+        <p class="why">${escapeHtml(explainStance(item))}</p>
         <a href="${item.url}" target="_blank" rel="noopener">Read on Wikipedia →</a>
       </article>`;
     })
@@ -254,7 +244,10 @@ function renderVerdict(claim, verdict, classified) {
         verdict.detail,
         "",
         "Sources:",
-        ...classified.map((item) => `- ${item.title} (${item.url})`),
+        ...classified.flatMap((item) => [
+          `- ${item.title} (${item.url})`,
+          `  ${explainStance(item)}`,
+        ]),
       ];
       try {
         await navigator.clipboard.writeText(lines.join("\n"));

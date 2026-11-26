@@ -6,6 +6,7 @@ import {
   classifyEvidence,
   decodeClaimFromHash,
   encodeClaimInHash,
+  explainStance,
   extractKeywords,
   isDisambiguationPage,
   loadHistory,
@@ -68,6 +69,7 @@ describe("classifyEvidence", () => {
     );
     assert.equal(result.stance, "supports");
     assert.deepEqual(result.matchedKeywords, ["apollo", "moon"]);
+    assert.deepEqual(result.titleKeywords, ["apollo"]);
     assert.deepEqual(result.signals, []);
   });
 
@@ -115,6 +117,80 @@ describe("classifyEvidence", () => {
     );
     assert.equal(result.stance, "related");
     assert.deepEqual(result.matchedKeywords, []);
+  });
+});
+
+describe("explainStance", () => {
+  const supportExtract =
+    "Apollo 11 was the American spaceflight that first landed humans on the Moon in 1969.";
+  const pushbackExtract =
+    "The ten percent of the brain myth states that humans use only a small part of their brains. There is no scientific evidence for it.";
+
+  it("says why a supporting article counts, with the keywords and the title match", () => {
+    const reason = explainStance(
+      classifyEvidence(supportExtract, ["apollo", "moon"], "Apollo 11")
+    );
+    assert.equal(
+      reason,
+      'This counts as supporting because it mentions apollo and moon, and its title covers apollo.'
+    );
+  });
+
+  it("names the pushback words found in a questioning article", () => {
+    const reason = explainStance(
+      classifyEvidence(pushbackExtract, ["humans", "brains"])
+    );
+    assert.equal(
+      reason,
+      'This counts as pushback because it mentions humans and brains, and it uses "no scientific evidence" and "myth".'
+    );
+  });
+
+  it("names the pushback words even when no claim keyword matched", () => {
+    const reason = explainStance(
+      classifyEvidence("This idea is a hoax with no evidence behind it.", [
+        "goldfish",
+        "memory",
+      ])
+    );
+    assert.equal(
+      reason,
+      'This counts as pushback because it uses "no evidence" and "hoax".'
+    );
+  });
+
+  it("says why a related article is only background when a keyword matched", () => {
+    const reason = explainStance(
+      classifyEvidence(
+        "The Moon is Earth's only natural satellite.",
+        ["moon", "landings", "faked"]
+      )
+    );
+    assert.equal(
+      reason,
+      "This is background only: it mentions moon, but it never confirms the claim or pushes back on it."
+    );
+  });
+
+  it("says why a related article is only background when nothing matched", () => {
+    const reason = explainStance(
+      classifyEvidence(
+        "Water is an inorganic compound with the chemical formula H2O.",
+        ["headache", "cure"]
+      )
+    );
+    assert.equal(
+      reason,
+      "This is background only: it never mentions the claim's key words, and nothing in it pushes back either."
+    );
+  });
+
+  it("handles an empty result without crashing", () => {
+    const expected =
+      "This is background only: it never mentions the claim's key words, and nothing in it pushes back either.";
+    assert.equal(explainStance({}), expected);
+    assert.equal(explainStance(null), expected);
+    assert.equal(explainStance(undefined), expected);
   });
 });
 

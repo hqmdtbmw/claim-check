@@ -93,12 +93,47 @@ export function classifyEvidence(extract, keywords, title = "") {
   const isDepiction = DEPICTION_WORDS.some((w) => titleText.includes(w));
 
   if (signals.length > 0) {
-    return { stance: "questions", matchedKeywords, signals };
+    return { stance: "questions", matchedKeywords, titleKeywords, signals };
   }
   if (matchedKeywords.length >= 2 && titleKeywords.length >= 1 && !isDepiction) {
-    return { stance: "supports", matchedKeywords, signals };
+    return { stance: "supports", matchedKeywords, titleKeywords, signals };
   }
-  return { stance: "related", matchedKeywords, signals };
+  return { stance: "related", matchedKeywords, titleKeywords, signals };
+}
+
+// Say, in plain words, why an article landed where it did. The
+// reason names the claim keywords the article actually mentions,
+// the title match when there is one, and any pushback words found
+// in it, so the sorting is not a black box. It takes the result
+// classifyEvidence returns.
+export function explainStance(result) {
+  const item = result || {};
+  const matched = (item.matchedKeywords || []).filter(Boolean);
+  const signals = (item.signals || []).filter(Boolean);
+  const titleMatches = (item.titleKeywords || []).filter(Boolean);
+
+  const joinWords = (words) => {
+    if (words.length === 1) return words[0];
+    return `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}`;
+  };
+  const quoted = (words) => joinWords(words.map((w) => `"${w}"`));
+
+  if (item.stance === "questions") {
+    if (matched.length > 0) {
+      return `This counts as pushback because it mentions ${joinWords(matched)}, and it uses ${quoted(signals)}.`;
+    }
+    return `This counts as pushback because it uses ${quoted(signals)}.`;
+  }
+  if (item.stance === "supports") {
+    if (titleMatches.length > 0) {
+      return `This counts as supporting because it mentions ${joinWords(matched)}, and its title covers ${joinWords(titleMatches)}.`;
+    }
+    return `This counts as supporting because it mentions ${joinWords(matched)}.`;
+  }
+  if (matched.length > 0) {
+    return `This is background only: it mentions ${joinWords(matched)}, but it never confirms the claim or pushes back on it.`;
+  }
+  return "This is background only: it never mentions the claim's key words, and nothing in it pushes back either.";
 }
 
 // A disambiguation page lists several topics that share a name,
