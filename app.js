@@ -164,5 +164,29 @@ function renderVerdict(claim, verdict, classified) {
       <p class="counts">${supports} source${supports === 1 ? "" : "s"} line up · ${questions} push back · ${classified.length} checked</p>
     </section>
     ${cards}
-    <p class="disclaimer">Wikipedia is a starting point, not a judge. The verdict above is just a guide, the sources are the real answer. Read them before you share the claim.</p>`;
+    <p class="disclaimer">Wikipedia is a starting point, not a judge. The verdict above is just a guide, the sources are the real answer. Read them before you share the claim.</p>
+    <p><button type="button" id="copy-verdict">Copy the verdict</button></p>`;
+
+  const copyButton = document.getElementById("copy-verdict");
+  if (copyButton) {
+    copyButton.addEventListener("click", async () => {
+      const lines = [
+        `Claim: ${claim}`,
+        `Verdict: ${verdict.label}`,
+        verdict.detail,
+        "",
+        "Sources:",
+        ...classified.map((item) => `- ${item.title} (${item.url})`),
+      ];
+      try {
+        await navigator.clipboard.writeText(lines.join("\n"));
+        copyButton.textContent = "Copied";
+        setTimeout(() => {
+          copyButton.textContent = "Copy the verdict";
+        }, 2000);
+      } catch {
+        copyButton.textContent = "Copy did not work, select the text instead";
+      }
+    });
+  }
 }
