@@ -1,10 +1,13 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
+  addToHistory,
   buildSearchQuery,
   classifyEvidence,
   extractKeywords,
   isDisambiguationPage,
+  loadHistory,
+  saveHistory,
   summarizeVerdict,
 } from "../claimcheck.js";
 
@@ -179,5 +182,78 @@ describe("summarizeVerdict", () => {
   it("says no clear answer when everything is only related", () => {
     const verdict = summarizeVerdict([{ stance: "related" }]);
     assert.equal(verdict.label, "Related, but no clear answer");
+  });
+});
+
+describe("history", () => {
+  function fakeStorage() {
+    const data = {};
+    return {
+      getItem: (key) => (key in data ? data[key] : null),
+      setItem: (key, value) => {
+        data[key] = String(value);
+      },
+    };
+  }
+
+  it("puts the newest check first", () => {
+    const history = addToHistory(
+      [{ claim: "first claim", label: "Mixed picture", checkedAt: 1 }],
+      { claim: "second claim", label: "The evidence lines up", checkedAt: 2 }
+    );
+    assert.equal(history[0].claim, "second claim");
+    assert.equal(history[1].claim, "first claim");
+  });
+
+  it("moves a repeat claim to the front instead of duplicating it", () => {
+    const history = addToHistory(
+      [
+        { claim: "The moon landings were faked", label: "old", checkedAt: 1 },
+        { claim: "other claim", label: "old", checkedAt: 2 },
+      ],
+      { claim: "the Moon Landings were faked", label: "new", checkedAt: 3 }
+    );
+    assert.equal(history.length, 2);
+    assert.equal(history[0].claim, "the Moon Landings were faked");
+    assert.equal(history[0].label, "new");
+  });
+
+  it("keeps at most eight checks", () => {
+    let history = [];
+    for (let i = 0; i < 10; i += 1) {
+      history = addToHistory(history, {
+        claim: `claim ${i}`,
+        label: "Mixed picture",
+        checkedAt: i,
+      });
+    }
+    assert.equal(history.length, 8);
+    assert.equal(history[0].claim, "claim 9");
+    assert.equal(history[7].claim, "claim 2");
+  });
+
+  it("ignores a blank claim", () => {
+    const history = addToHistory([], { claim: "   ", label: "x" });
+    assert.deepEqual(history, []);
+  });
+
+  it("saves and loads through storage", () => {
+    const storage = fakeStorage();
+    const history = addToHistory([], {
+      claim: "Goldfish have a memory of only three seconds",
+      label: "The evidence raises doubts",
+      checkedAt: 100,
+    });
+    saveHistory(storage, history);
+    assert.deepEqual(loadHistory(storage), history);
+  });
+
+  it("loads an empty list when nothing is saved or the data is bad", () => {
+    const storage = fakeStorage();
+    assert.deepEqual(loadHistory(storage), []);
+    storage.setItem("claim-check-history", "not json at all");
+    assert.deepEqual(loadHistory(storage), []);
+    storage.setItem("claim-check-history", JSON.stringify({ claim: "x" }));
+    assert.deepEqual(loadHistory(storage), []);
   });
 });

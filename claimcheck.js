@@ -154,3 +154,54 @@ export function summarizeVerdict(results) {
       "The sources found are about the topic, but none of them clearly confirms or disputes the claim.",
   };
 }
+
+// History: the last few claims you checked, so you can run one again
+// without typing it out. It lives in the browser only, nothing
+// leaves your machine. These helpers are pure, so the tests can use
+// them without a real localStorage.
+
+export const HISTORY_KEY = "claim-check-history";
+export const MAX_HISTORY = 8;
+
+// Put a new check at the front. If the same claim is already in the
+// list, it moves to the front instead of appearing twice.
+export function addToHistory(history, entry) {
+  const clean = (entry && entry.claim ? entry.claim : "").trim();
+  if (!clean) return [...(history || [])];
+  const rest = (history || []).filter(
+    (item) =>
+      (item.claim || "").trim().toLowerCase() !== clean.toLowerCase()
+  );
+  return [
+    {
+      claim: clean,
+      label: (entry && entry.label) || "",
+      checkedAt: (entry && entry.checkedAt) || Date.now(),
+    },
+    ...rest,
+  ].slice(0, MAX_HISTORY);
+}
+
+// Read the saved list out of a storage shaped like localStorage.
+// A missing key or bad JSON just means an empty list.
+export function loadHistory(storage) {
+  try {
+    const raw = storage.getItem(HISTORY_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((item) => item && typeof item.claim === "string");
+  } catch {
+    return [];
+  }
+}
+
+// Write the list back. If the browser blocks storage, this does
+// nothing instead of breaking the page.
+export function saveHistory(storage, history) {
+  try {
+    storage.setItem(HISTORY_KEY, JSON.stringify(history || []));
+  } catch {
+    // storage unavailable, the page still works without history
+  }
+}

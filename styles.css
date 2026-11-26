@@ -88,6 +88,33 @@ button[type="submit"]:disabled { opacity: 0.6; cursor: wait; }
 
 #results { margin-top: 32px; }
 
+#history { margin-top: 32px; }
+#history h2 { font-size: 1.4rem; }
+#history-list { list-style: none; padding: 0; margin: 0; }
+#history-list li {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  flex-wrap: wrap;
+  border-top: 1px solid #eee;
+  padding: 10px 0;
+}
+.history-claim { font-weight: 600; }
+.history-label { font-size: 0.9rem; color: #555; }
+#history-list button,
+#clear-history {
+  font: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: #111212;
+  text-decoration: underline;
+  text-decoration-color: #f5c518;
+  text-decoration-thickness: 2px;
+  cursor: pointer;
+}
+#clear-history { margin-top: 8px; font-size: 0.9rem; color: #555; }
+
 .verdict {
   border: 2px solid #111212;
   border-left: 8px solid #f5c518;

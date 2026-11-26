@@ -10,6 +10,7 @@ I kept seeing wild claims in group chats and on timelines, and nobody ever check
 2. **It pulls the important words out** and searches Wikipedia for the articles that cover the topic.
 3. **Each article gets sorted.** If it lines up with the claim, it counts as supporting. If it uses words like "myth", "debunked" or "no evidence", it counts as pushback. The rest is just background.
 4. **You get a verdict and the sources.** The verdict is only a guide. The linked articles are the real answer, so read them before you share the claim.
+5. **Your last few checks are saved in your browser**, so you can run one again with one click. Nothing is uploaded anywhere.
 
 ## Run it
 

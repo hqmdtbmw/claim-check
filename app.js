@@ -3,10 +3,13 @@
 // talks to the network and the page.
 
 import {
+  addToHistory,
   buildSearchQuery,
   classifyEvidence,
   extractKeywords,
   isDisambiguationPage,
+  loadHistory,
+  saveHistory,
   summarizeVerdict,
 } from "./claimcheck.js";
 
@@ -18,6 +21,9 @@ const input = document.getElementById("claim-input");
 const submitButton = document.getElementById("check-button");
 const statusEl = document.getElementById("status");
 const resultsEl = document.getElementById("results");
+const historySection = document.getElementById("history");
+const historyList = document.getElementById("history-list");
+const clearHistoryButton = document.getElementById("clear-history");
 
 document.querySelectorAll("[data-example]").forEach((button) => {
   button.addEventListener("click", () => {
@@ -37,6 +43,56 @@ form.addEventListener("submit", async (event) => {
   }
   await checkClaim(claim);
 });
+
+// The recent checks list. Each row shows the claim and the verdict
+// it got, with a button to run it again.
+function renderHistory() {
+  const history = loadHistory(window.localStorage);
+  if (!history.length) {
+    historySection.hidden = true;
+    historyList.innerHTML = "";
+    return;
+  }
+  historySection.hidden = false;
+  historyList.innerHTML = history
+    .map(
+      (item, i) => `
+      <li>
+        <span class="history-claim">${escapeHtml(item.claim)}</span>
+        <span class="history-label">${escapeHtml(item.label || "")}</span>
+        <button type="button" data-history-index="${i}">Check again</button>
+      </li>`
+    )
+    .join("");
+}
+
+function recordHistory(claim, label) {
+  const history = addToHistory(loadHistory(window.localStorage), {
+    claim,
+    label,
+    checkedAt: Date.now(),
+  });
+  saveHistory(window.localStorage, history);
+  renderHistory();
+}
+
+historyList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-history-index]");
+  if (!button) return;
+  const history = loadHistory(window.localStorage);
+  const item = history[parseInt(button.dataset.historyIndex, 10)];
+  if (!item) return;
+  input.value = item.claim;
+  form.requestSubmit();
+  input.focus();
+});
+
+clearHistoryButton.addEventListener("click", () => {
+  saveHistory(window.localStorage, []);
+  renderHistory();
+});
+
+renderHistory();
 
 function setStatus(message, isError = false) {
   statusEl.textContent = message;
@@ -86,7 +142,9 @@ async function checkClaim(claim) {
 
     if (searchResults.length === 0) {
       setStatus("");
-      renderVerdict(claim, summarizeVerdict([]), []);
+      const verdict = summarizeVerdict([]);
+      renderVerdict(claim, verdict, []);
+      recordHistory(claim, verdict.label);
       return;
     }
 
@@ -103,7 +161,9 @@ async function checkClaim(claim) {
     }));
 
     setStatus("");
-    renderVerdict(claim, summarizeVerdict(classified), classified);
+    const verdict = summarizeVerdict(classified);
+    renderVerdict(claim, verdict, classified);
+    recordHistory(claim, verdict.label);
   } catch (error) {
     setStatus(
       "Could not reach Wikipedia right now. Check your connection and try again.",
