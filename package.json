@@ -1,0 +1,1 @@
+{"description":"Paste any claim, get the evidence for and against it with sources — the internet's immune system.","license":"MIT","name":"claim-check","scripts":{"test":"node --test test/claimcheck.test.mjs"},"type":"module","version":"1.0.0"}
