@@ -39,6 +39,29 @@ form label {
   margin-bottom: 6px;
 }
 
+.mode-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.mode-toggle button {
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  background: none;
+  border: 2px solid #111212;
+  border-radius: 999px;
+  padding: 6px 14px;
+  cursor: pointer;
+  color: #111212;
+}
+
+.mode-toggle button[aria-pressed="true"] {
+  background: #111212;
+  color: #fff;
+}
+
 textarea {
   width: 100%;
   font: inherit;
@@ -121,6 +144,36 @@ button[type="submit"]:disabled { opacity: 0.6; cursor: wait; }
   padding: 20px;
   margin-bottom: 24px;
 }
+
+.batch-item {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 14px 18px;
+  margin-bottom: 12px;
+}
+
+.batch-item summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  cursor: pointer;
+  list-style: none;
+}
+
+.batch-item summary::-webkit-details-marker { display: none; }
+
+.batch-claim { font-weight: 700; }
+.batch-verdict {
+  font-size: 0.9rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: #555;
+}
+
+.batch-item > p { margin: 12px 0; }
+.batch-item .evidence:last-child { margin-bottom: 4px; }
 
 .verdict-claim { font-style: italic; color: #555; margin: 0 0 8px; }
 .verdict h2 { margin: 0 0 8px; font-size: 1.5rem; }

@@ -11,6 +11,7 @@ import {
   isDisambiguationPage,
   loadHistory,
   saveHistory,
+  splitClaims,
   summarizeVerdict,
 } from "../claimcheck.js";
 
@@ -41,6 +42,65 @@ describe("extractKeywords", () => {
     assert.deepEqual(extractKeywords(""), []);
     assert.deepEqual(extractKeywords("the and of"), []);
     assert.deepEqual(extractKeywords(null), []);
+  });
+});
+
+describe("splitClaims", () => {
+  it("splits pasted text into one claim per line", () => {
+    assert.deepEqual(
+      splitClaims(
+        "The moon landings were faked\nHumans use only 10% of their brains\nApollo 11 landed the first humans on the Moon"
+      ),
+      [
+        "The moon landings were faked",
+        "Humans use only 10% of their brains",
+        "Apollo 11 landed the first humans on the Moon",
+      ]
+    );
+  });
+
+  it("trims each line and drops blank lines", () => {
+    assert.deepEqual(
+      splitClaims("  The moon landings were faked  \n\n   \nGoldfish have a memory of only three seconds\n"),
+      [
+        "The moon landings were faked",
+        "Goldfish have a memory of only three seconds",
+      ]
+    );
+  });
+
+  it("handles Windows line endings", () => {
+    assert.deepEqual(
+      splitClaims("The moon landings were faked\r\nHumans use only 10% of their brains"),
+      ["The moon landings were faked", "Humans use only 10% of their brains"]
+    );
+  });
+
+  it("keeps a single claim as a list of one", () => {
+    assert.deepEqual(splitClaims("The moon landings were faked"), [
+      "The moon landings were faked",
+    ]);
+  });
+
+  it("drops lines that are too short to be a claim", () => {
+    assert.deepEqual(
+      splitClaims("The moon landings were faked\nyes\nthe moon\nok"),
+      ["The moon landings were faked"]
+    );
+  });
+
+  it("drops a line with fewer than three words even if it is long enough", () => {
+    assert.deepEqual(
+      splitClaims("The moon landings were faked\nsupercalifragilistic expialidocious"),
+      ["The moon landings were faked"]
+    );
+  });
+
+  it("returns an empty list for empty or non-string input", () => {
+    assert.deepEqual(splitClaims(""), []);
+    assert.deepEqual(splitClaims("   \n\n  "), []);
+    assert.deepEqual(splitClaims(null), []);
+    assert.deepEqual(splitClaims(undefined), []);
   });
 });
 

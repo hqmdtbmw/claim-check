@@ -190,6 +190,23 @@ export function summarizeVerdict(results) {
   };
 }
 
+// Split pasted text into one claim per line. People usually
+// fact-check a paragraph, not a single sentence, so the batch
+// mode runs each line as its own claim. Blank lines are dropped,
+// and so are lines too short to be a claim: under three words,
+// or under ten characters. A lone "yes" or "the moon" is not
+// worth a Wikipedia search.
+export function splitClaims(text) {
+  if (!text || typeof text !== "string") return [];
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => {
+      if (!line || line.length < 10) return false;
+      return line.split(/\s+/).length >= 3;
+    });
+}
+
 // Shareable links: a check lives in the URL hash as
 // #claim=<encoded claim>, so the link can be copied and sent to
 // someone else. Anyone opening it sees the same claim checked.
