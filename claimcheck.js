@@ -1,6 +1,6 @@
-// claimcheck.js — the pure logic behind Claim Check.
-// No DOM, no network. Imported by app.js in the browser and by the
-// test suite under test/. Keeping the thinking separate from the
+// claimcheck.js holds the pure logic behind Claim Check.
+// No DOM, no network. app.js uses it in the browser and the
+// test suite uses it under test/. Keeping it separate from the
 // fetching means the verdict logic can be tested without Wikipedia.
 
 export const STOPWORDS = new Set([
@@ -60,8 +60,8 @@ export function buildSearchQuery(claim) {
   return (claim || "").trim();
 }
 
-// Words in a title that mean the article is about a depiction of the
-// topic — a film, a song, a novel — rather than the topic itself.
+// Words in a title that mean the article is about a depiction of
+// the topic, a film, a song or a novel, rather than the topic itself.
 const DEPICTION_WORDS = [
   "film",
   "novel",
@@ -78,7 +78,7 @@ const DEPICTION_WORDS = [
 //
 // A source only counts as supporting when it both mentions the claim's
 // keywords in the text AND shares one of them with its title. Without
-// that, a keyword match is usually a coincidence — a film about faking
+// that, a keyword match is usually a coincidence. A film about faking
 // the Moon landing is not evidence the landings were faked.
 export function classifyEvidence(extract, keywords, title = "") {
   const text = (extract || "").toLowerCase();

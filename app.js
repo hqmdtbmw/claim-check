@@ -1,6 +1,6 @@
-// app.js — wires the page to Wikipedia. Fetches, classifies, renders.
-// The thinking lives in claimcheck.js; this file only talks to the
-// network and the DOM.
+// app.js wires the page up to Wikipedia. It fetches, classifies
+// and renders. The real logic is in claimcheck.js, this file just
+// talks to the network and the page.
 
 import {
   buildSearchQuery,
@@ -30,7 +30,7 @@ form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const claim = input.value.trim();
   if (claim.length < 3) {
-    setStatus("Type a claim first — even a short one works.", true);
+    setStatus("Type a claim first.", true);
     input.focus();
     return;
   }
@@ -164,5 +164,5 @@ function renderVerdict(claim, verdict, classified) {
       <p class="counts">${supports} source${supports === 1 ? "" : "s"} line up · ${questions} push back · ${classified.length} checked</p>
     </section>
     ${cards}
-    <p class="disclaimer">Wikipedia is a starting point, not a judge. The verdict above is a guide — the sources are the real answer. Read them before you share the claim.</p>`;
+    <p class="disclaimer">Wikipedia is a starting point, not a judge. The verdict above is just a guide, the sources are the real answer. Read them before you share the claim.</p>`;
 }
