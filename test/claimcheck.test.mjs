@@ -4,6 +4,8 @@ import {
   addToHistory,
   buildSearchQuery,
   classifyEvidence,
+  decodeClaimFromHash,
+  encodeClaimInHash,
   extractKeywords,
   isDisambiguationPage,
   loadHistory,
@@ -182,6 +184,76 @@ describe("summarizeVerdict", () => {
   it("says no clear answer when everything is only related", () => {
     const verdict = summarizeVerdict([{ stance: "related" }]);
     assert.equal(verdict.label, "Related, but no clear answer");
+  });
+});
+
+describe("shareable links", () => {
+  it("encodes a claim into a hash and decodes it back", () => {
+    const claim = "The moon landings were faked";
+    assert.equal(
+      encodeClaimInHash(claim),
+      "#claim=The%20moon%20landings%20were%20faked"
+    );
+    assert.equal(
+      decodeClaimFromHash(encodeClaimInHash(claim)),
+      claim
+    );
+  });
+
+  it("keeps special characters intact through the round trip", () => {
+    const claims = [
+      "Fish & chips cost £5, or 50% more?",
+      "Did the #1 album of 1999 sell 10m+ copies?",
+      "Is 5 > 3 and 2 < 4?",
+      "Café au lait: worth the hype?",
+      "What is 2 + 2 = 4, really?",
+      "Emoji in a claim 🐟 still works",
+      "Quotes \"like this\" and 'this' too",
+    ];
+    for (const claim of claims) {
+      assert.equal(decodeClaimFromHash(encodeClaimInHash(claim)), claim);
+    }
+  });
+
+  it("handles a long claim without losing anything", () => {
+    const claim = "The moon landings were faked ".repeat(100).trim();
+    assert.ok(claim.length > 2500);
+    assert.equal(decodeClaimFromHash(encodeClaimInHash(claim)), claim);
+  });
+
+  it("trims the claim before encoding", () => {
+    assert.equal(
+      decodeClaimFromHash(encodeClaimInHash("  goldfish have short memories  ")),
+      "goldfish have short memories"
+    );
+  });
+
+  it("returns an empty hash for an empty or blank claim", () => {
+    assert.equal(encodeClaimInHash(""), "");
+    assert.equal(encodeClaimInHash("   "), "");
+    assert.equal(encodeClaimInHash(null), "");
+  });
+
+  it("returns an empty claim when the hash has no claim in it", () => {
+    assert.equal(decodeClaimFromHash(""), "");
+    assert.equal(decodeClaimFromHash("#"), "");
+    assert.equal(decodeClaimFromHash("#foo=bar"), "");
+    assert.equal(decodeClaimFromHash(null), "");
+  });
+
+  it("reads the claim even when other params share the hash", () => {
+    assert.equal(
+      decodeClaimFromHash("#claim=Goldfish%20forget%20fast&ref=twitter"),
+      "Goldfish forget fast"
+    );
+  });
+
+  it("works with or without the leading hash mark", () => {
+    assert.equal(decodeClaimFromHash("claim=Hello%20world"), "Hello world");
+  });
+
+  it("does not crash on broken percent encoding", () => {
+    assert.equal(decodeClaimFromHash("#claim=100%25%"), "100%%");
   });
 });
 

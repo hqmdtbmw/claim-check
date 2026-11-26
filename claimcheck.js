@@ -155,6 +155,36 @@ export function summarizeVerdict(results) {
   };
 }
 
+// Shareable links: a check lives in the URL hash as
+// #claim=<encoded claim>, so the link can be copied and sent to
+// someone else. Anyone opening it sees the same claim checked.
+// encodeURIComponent keeps every character URL-safe, including
+// &, #, ?, = and unicode, so the claim survives the round trip
+// intact. There is no length cap here: browsers accept hashes
+// far longer than any claim a person would paste.
+
+export const HASH_CLAIM_PARAM = "claim";
+
+export function encodeClaimInHash(claim) {
+  const clean = (claim || "").trim();
+  if (!clean) return "";
+  return `#${HASH_CLAIM_PARAM}=${encodeURIComponent(clean)}`;
+}
+
+// Pull a claim back out of a hash. Returns "" when there is no
+// claim in it, the hash is empty, or the encoding is broken.
+export function decodeClaimFromHash(hash) {
+  if (!hash || typeof hash !== "string") return "";
+  try {
+    const raw = hash.startsWith("#") ? hash.slice(1) : hash;
+    const value = new URLSearchParams(raw).get(HASH_CLAIM_PARAM);
+    if (!value) return "";
+    return value.trim();
+  } catch {
+    return "";
+  }
+}
+
 // History: the last few claims you checked, so you can run one again
 // without typing it out. It lives in the browser only, nothing
 // leaves your machine. These helpers are pure, so the tests can use

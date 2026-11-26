@@ -6,6 +6,8 @@ import {
   addToHistory,
   buildSearchQuery,
   classifyEvidence,
+  decodeClaimFromHash,
+  encodeClaimInHash,
   extractKeywords,
   isDisambiguationPage,
   loadHistory,
@@ -94,6 +96,14 @@ clearHistoryButton.addEventListener("click", () => {
 
 renderHistory();
 
+// If the link carried a claim, it wins over whatever is typed in.
+// Fill the input and run the check straight away.
+const sharedClaim = decodeClaimFromHash(window.location.hash);
+if (sharedClaim) {
+  input.value = sharedClaim;
+  checkClaim(sharedClaim);
+}
+
 function setStatus(message, isError = false) {
   statusEl.textContent = message;
   statusEl.classList.toggle("error", isError);
@@ -134,6 +144,10 @@ async function checkClaim(claim) {
   setLoading(true);
   resultsEl.innerHTML = "";
   setStatus("Searching Wikipedia for evidence…");
+
+  // Put the claim in the address bar so the link can be shared.
+  // replaceState keeps it out of the back button history.
+  history.replaceState(null, "", encodeClaimInHash(claim));
 
   try {
     const keywords = extractKeywords(claim);
@@ -228,6 +242,7 @@ function renderVerdict(claim, verdict, classified) {
     </section>
     ${cards}
     <p class="disclaimer">Wikipedia is a starting point, not a judge. The verdict above is just a guide, the sources are the real answer. Read them before you share the claim.</p>
+    <p class="share-hint">Want to send this check to someone? The link in your address bar already holds the claim, just copy it and send it.</p>
     <p><button type="button" id="copy-verdict">Copy the verdict</button></p>`;
 
   const copyButton = document.getElementById("copy-verdict");

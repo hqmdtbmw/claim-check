@@ -12,6 +12,8 @@ I kept seeing wild claims in group chats and on timelines, and nobody ever check
 4. **You get a verdict and the sources.** The verdict is only a guide. The linked articles are the real answer, so read them before you share the claim.
 5. **Your last few checks are saved in your browser**, so you can run one again with one click. Nothing is uploaded anywhere.
 
+You can share a check too. When you check a claim, the link in your address bar holds the claim, so just copy it and send it. Anyone opening the link sees the same claim checked.
+
 ## Run it
 
 No build step, no API key, no account. Serve the folder with any static server:
