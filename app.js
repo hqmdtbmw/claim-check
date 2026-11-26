@@ -6,6 +6,7 @@ import {
   buildSearchQuery,
   classifyEvidence,
   extractKeywords,
+  isDisambiguationPage,
   summarizeVerdict,
 } from "./claimcheck.js";
 
@@ -90,7 +91,9 @@ async function checkClaim(claim) {
     }
 
     const titles = searchResults.map((r) => r.title);
-    const pages = await fetchExtracts(titles);
+    const pages = (await fetchExtracts(titles)).filter(
+      (page) => !isDisambiguationPage(page.title, page.extract)
+    );
 
     const classified = pages.map((page) => ({
       title: page.title,

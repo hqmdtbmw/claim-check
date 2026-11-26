@@ -4,6 +4,7 @@ import {
   buildSearchQuery,
   classifyEvidence,
   extractKeywords,
+  isDisambiguationPage,
   summarizeVerdict,
 } from "../claimcheck.js";
 
@@ -109,6 +110,40 @@ describe("classifyEvidence", () => {
     );
     assert.equal(result.stance, "related");
     assert.deepEqual(result.matchedKeywords, []);
+  });
+});
+
+describe("isDisambiguationPage", () => {
+  it("spots a page whose extract lists meanings", () => {
+    assert.equal(
+      isDisambiguationPage(
+        "Mercury",
+        "Mercury may refer to: Mercury (planet), Mercury (element)..."
+      ),
+      true
+    );
+  });
+
+  it("spots a page with disambiguation in the title", () => {
+    assert.equal(
+      isDisambiguationPage("Mercury (disambiguation)", "Some text."),
+      true
+    );
+  });
+
+  it("leaves a real article alone", () => {
+    assert.equal(
+      isDisambiguationPage(
+        "Mercury (planet)",
+        "Mercury is the smallest planet in the Solar System."
+      ),
+      false
+    );
+  });
+
+  it("handles empty input without crashing", () => {
+    assert.equal(isDisambiguationPage("", ""), false);
+    assert.equal(isDisambiguationPage(null, null), false);
   });
 });
 

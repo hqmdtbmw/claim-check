@@ -101,6 +101,18 @@ export function classifyEvidence(extract, keywords, title = "") {
   return { stance: "related", matchedKeywords, signals };
 }
 
+// A disambiguation page lists several topics that share a name,
+// it is not an article about any of them. Its extract starts
+// with "may refer to:", and its title often says so too.
+export function isDisambiguationPage(title, extract) {
+  const titleText = (title || "").toLowerCase();
+  const text = (extract || "").toLowerCase();
+  return (
+    titleText.includes("(disambiguation)") ||
+    text.includes("may refer to:")
+  );
+}
+
 // Turn a list of classified results into one plain-language verdict.
 // This is a guide, not a fact-checker: the sources below it are the
 // real answer, and the UI says so.
