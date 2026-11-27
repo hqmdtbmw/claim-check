@@ -16,7 +16,7 @@ You can share a check too. When you check a claim, the link in your address bar 
 
 ## Checking a few at once
 
-I usually check claims one at a time, but a paragraph someone forwarded has five claims in it, not one. So there is a batch mode. Flip the toggle above the box to "Several claims", paste one claim per line, and it runs through them in order. You get a short list: each claim, its verdict, and the sources if you open it up. The copy button copies all of them at once, and each claim lands in your recent checks on its own. A batch has no shareable link, since the link only holds one claim. Check a claim on its own if you want to send it to someone.
+I usually check claims one at a time, but a paragraph someone forwarded has five claims in it, not one. So there is a batch mode. Flip the toggle above the box to "Several claims", paste one claim per line, and it runs through them in order. You get a short list: each claim, its verdict, and the sources if you open it up. At the top it sums up the batch in one line, like how many look right and how many found nothing, so you can see the shape of it before opening any claim. The copy button copies all of them at once, with that summary line at the top, and each claim lands in your recent checks on its own. A batch has no shareable link, since the link only holds one claim. Check a claim on its own if you want to send it to someone.
 
 ## Run it
 

@@ -4,6 +4,8 @@
 
 import {
   addToHistory,
+  batchCopyLines,
+  batchSummary,
   classifyEvidence,
   decodeClaimFromHash,
   encodeClaimInHash,
@@ -16,6 +18,7 @@ import {
   shortenExtract,
   splitClaims,
   summarizeVerdict,
+  verdictCopyLines,
   verdictTone,
 } from "./claimcheck.js";
 
@@ -323,22 +326,6 @@ function evidenceCards(classified) {
     .join("");
 }
 
-// The plain-text version of one check, for the copy button.
-function verdictCopyLines(claim, verdict, classified) {
-  return [
-    `Claim: ${claim}`,
-    `Verdict: ${verdict.label}`,
-    verdict.detail,
-    "",
-    "Sources:",
-    ...classified.flatMap((item) => [
-      `- ${item.title} (${item.url})`,
-      `  ${explainStance(item)}`,
-      ...(item.snippet ? [`  "${item.snippet}"`] : []),
-    ]),
-  ];
-}
-
 function wireCopyButton(button, lines, idleLabel) {
   if (!button) return;
   button.addEventListener("click", async () => {
@@ -407,6 +394,7 @@ function renderBatch(results) {
   resultsEl.innerHTML = `
     <section class="verdict" aria-live="polite">
       <h2>${results.length} claims checked</h2>
+      <p class="batch-summary">${escapeHtml(batchSummary(results))}</p>
       <p class="counts">${totalSupports} source${totalSupports === 1 ? "" : "s"} line up · ${totalQuestions} push back · open a claim to see its sources</p>
     </section>
     ${items}
@@ -414,10 +402,7 @@ function renderBatch(results) {
     <p class="share-hint">A batch has no single shareable link. Check a claim on its own if you want to send it to someone.</p>
     <p><button type="button" id="copy-verdict">Copy all the verdicts</button></p>`;
 
-  const lines = results.flatMap((result, i) => [
-    ...(i > 0 ? [""] : []),
-    ...verdictCopyLines(result.claim, result.verdict, result.classified),
-  ]);
+  const lines = batchCopyLines(results);
   wireCopyButton(
     document.getElementById("copy-verdict"),
     lines,

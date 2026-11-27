@@ -2,6 +2,8 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
   addToHistory,
+  batchCopyLines,
+  batchSummary,
   buildSearchQuery,
   classifyEvidence,
   decodeClaimFromHash,
@@ -45,6 +47,122 @@ describe("extractKeywords", () => {
     assert.deepEqual(extractKeywords(""), []);
     assert.deepEqual(extractKeywords("the and of"), []);
     assert.deepEqual(extractKeywords(null), []);
+  });
+});
+
+describe("batchSummary", () => {
+  const item = (label, claim = "The moon landings were faked") => ({
+    claim,
+    verdict: { label, detail: "Some detail." },
+    classified: [],
+  });
+
+  it("sums up a batch where every claim lines up", () => {
+    assert.equal(
+      batchSummary([
+        item("The evidence lines up"),
+        item("The evidence lines up"),
+        item("The evidence lines up"),
+      ]),
+      "3 checked: 3 look right"
+    );
+  });
+
+  it("sums up a mix, only naming categories with a count", () => {
+    assert.equal(
+      batchSummary([
+        item("The evidence lines up"),
+        item("The evidence raises doubts"),
+        item("Nothing found"),
+      ]),
+      "3 checked: 1 looks right, 1 has doubts, 1 found nothing"
+    );
+  });
+
+  it("sums up a batch where nothing was found", () => {
+    assert.equal(
+      batchSummary([item("Nothing found"), item("Nothing found")]),
+      "2 checked: 2 found nothing"
+    );
+  });
+
+  it("covers mixed, unclear and uncheckable claims too", () => {
+    assert.equal(
+      batchSummary([
+        item("Mixed picture"),
+        item("Related, but no clear answer"),
+        item("Could not check this one"),
+      ]),
+      "3 checked: 1 is mixed, 1 has no clear answer, 1 could not be checked"
+    );
+  });
+
+  it("uses plurals when more than one claim lands in a category", () => {
+    assert.equal(
+      batchSummary([
+        item("The evidence lines up"),
+        item("The evidence lines up"),
+        item("The evidence raises doubts"),
+        item("The evidence raises doubts"),
+      ]),
+      "4 checked: 2 look right, 2 have doubts"
+    );
+  });
+
+  it("gives an empty string for an empty batch", () => {
+    assert.equal(batchSummary([]), "");
+    assert.equal(batchSummary(null), "");
+    assert.equal(batchSummary(undefined), "");
+  });
+
+  it("changes when a claim is re-checked with a new verdict", () => {
+    const results = [
+      item("The evidence lines up"),
+      item("The evidence lines up"),
+    ];
+    assert.equal(batchSummary(results), "2 checked: 2 look right");
+    results[0] = item("The evidence raises doubts");
+    assert.equal(
+      batchSummary(results),
+      "2 checked: 1 looks right, 1 has doubts"
+    );
+  });
+});
+
+describe("batchCopyLines", () => {
+  it("puts the summary line at the top of the copied text", () => {
+    const lines = batchCopyLines([
+      {
+        claim: "The moon landings were faked",
+        verdict: { label: "The evidence raises doubts", detail: "The sources push back." },
+        classified: [],
+      },
+      {
+        claim: "Apollo 11 landed the first humans on the Moon",
+        verdict: { label: "The evidence lines up", detail: "The sources line up." },
+        classified: [
+          {
+            title: "Apollo 11",
+            url: "https://en.wikipedia.org/wiki/Apollo_11",
+            stance: "supports",
+            matchedKeywords: ["apollo", "moon"],
+            titleKeywords: ["apollo"],
+            signals: [],
+            snippet: "Apollo 11 landed humans on the Moon in 1969.",
+          },
+        ],
+      },
+    ]);
+    assert.equal(lines[0], "2 checked: 1 looks right, 1 has doubts");
+    assert.equal(lines[1], "");
+    assert.equal(lines[2], "Claim: The moon landings were faked");
+    assert.equal(lines[3], "Verdict: The evidence raises doubts");
+    assert.ok(lines.includes("Claim: Apollo 11 landed the first humans on the Moon"));
+    assert.ok(lines.includes("- Apollo 11 (https://en.wikipedia.org/wiki/Apollo_11)"));
+  });
+
+  it("copies nothing for an empty batch", () => {
+    assert.deepEqual(batchCopyLines([]), []);
   });
 });
 

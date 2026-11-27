@@ -267,6 +267,77 @@ export function summarizeVerdict(results) {
   };
 }
 
+// Sum up a batch of checks in one plain line, like
+// "3 checked: 1 looks right, 1 has doubts, 1 found nothing".
+// It counts by verdict label and only mentions a category when
+// at least one claim landed there. The line is worked out fresh
+// from the results every time, so re-checking a claim gives a
+// fresh summary. An empty batch has no summary, so it gives
+// back "".
+const BATCH_SUMMARY_PARTS = [
+  ["The evidence lines up", (n) => `${n} look${n === 1 ? "s" : ""} right`],
+  ["The evidence raises doubts", (n) => `${n} ha${n === 1 ? "s" : "ve"} doubts`],
+  ["Mixed picture", (n) => `${n} ${n === 1 ? "is" : "are"} mixed`],
+  ["Related, but no clear answer", (n) => `${n} ha${n === 1 ? "s" : "ve"} no clear answer`],
+  ["Nothing found", (n) => `${n} found nothing`],
+  ["Could not check this one", (n) => `${n} could not be checked`],
+];
+
+export function batchSummary(results) {
+  const list = results || [];
+  if (list.length === 0) return "";
+  const counts = new Map();
+  for (const item of list) {
+    const label =
+      (item && item.verdict && item.verdict.label) ||
+      (item && item.label) ||
+      "";
+    if (!label) continue;
+    counts.set(label, (counts.get(label) || 0) + 1);
+  }
+  const parts = [];
+  for (const [label, phrase] of BATCH_SUMMARY_PARTS) {
+    const n = counts.get(label);
+    if (n) parts.push(phrase(n));
+  }
+  const checked = `${list.length} checked`;
+  return parts.length ? `${checked}: ${parts.join(", ")}` : checked;
+}
+
+// The plain-text version of one check, for the copy button.
+export function verdictCopyLines(claim, verdict, classified) {
+  return [
+    `Claim: ${claim}`,
+    `Verdict: ${verdict.label}`,
+    verdict.detail,
+    "",
+    "Sources:",
+    ...(classified || []).flatMap((item) => [
+      `- ${item.title} (${item.url})`,
+      `  ${explainStance(item)}`,
+      ...(item.snippet ? [`  "${item.snippet}"`] : []),
+    ]),
+  ];
+}
+
+// The plain-text version of a whole batch, for the copy button.
+// The summary line goes at the top, then a blank line, then one
+// check after another with a blank line between them. An empty
+// batch copies nothing.
+export function batchCopyLines(results) {
+  const list = results || [];
+  const summary = batchSummary(list);
+  if (!summary) return [];
+  const lines = [summary, ""];
+  list.forEach((result, i) => {
+    if (i > 0) lines.push("");
+    lines.push(
+      ...verdictCopyLines(result.claim, result.verdict, result.classified || [])
+    );
+  });
+  return lines;
+}
+
 // Split pasted text into one claim per line. People usually
 // fact-check a paragraph, not a single sentence, so the batch
 // mode runs each line as its own claim. Blank lines are dropped,
