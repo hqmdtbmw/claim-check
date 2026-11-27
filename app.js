@@ -13,6 +13,7 @@ import {
   loadHistory,
   saveHistory,
   searchQueryFallbacks,
+  shortenExtract,
   splitClaims,
   summarizeVerdict,
 } from "./claimcheck.js";
@@ -178,6 +179,10 @@ async function fetchAndClassify(claim) {
     title: page.title,
     url: page.fullurl,
     extract: page.extract,
+    // The full extract decides the sorting, the short quote is
+    // what the reader sees. A missing quote just leaves the
+    // reason line on its own, never an error.
+    snippet: shortenExtract(page.extract),
     ...classifyEvidence(page.extract, keywords, page.title),
   }));
 
@@ -292,7 +297,10 @@ function escapeHtml(text) {
 }
 
 // The source cards, shared by the single check and the batch.
-// Same verdict labels, same reason lines, same links.
+// Same verdict labels, same reason lines, same links. The short
+// quote from the article sits under the reason line, in small
+// muted text, so the reader sees the article's own words. When
+// there is no quote, the reason line stands on its own.
 function evidenceCards(classified) {
   return classified
     .map((item) => {
@@ -302,8 +310,8 @@ function evidenceCards(classified) {
           <h3>${escapeHtml(item.title)}</h3>
           <span class="stance">${STANCE_LABEL[item.stance]}</span>
         </header>
-        <p>${escapeHtml(item.extract)}</p>
         <p class="why">${escapeHtml(explainStance(item))}</p>
+        ${item.snippet ? `<p class="quote">“${escapeHtml(item.snippet)}”</p>` : ""}
         <a href="${item.url}" target="_blank" rel="noopener">Read on Wikipedia →</a>
       </article>`;
     })
@@ -321,6 +329,7 @@ function verdictCopyLines(claim, verdict, classified) {
     ...classified.flatMap((item) => [
       `- ${item.title} (${item.url})`,
       `  ${explainStance(item)}`,
+      ...(item.snippet ? [`  "${item.snippet}"`] : []),
     ]),
   ];
 }

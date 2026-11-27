@@ -161,6 +161,58 @@ export function explainStance(result) {
   return "This is background only: it never mentions the claim's key words, and nothing in it pushes back either.";
 }
 
+// Shorten a source extract to the first one or two sentences, so
+// the reader sees the article's own words under the reason line
+// without a wall of text. A long sentence is cut at a word
+// boundary around 280 characters. Missing or empty extracts give
+// back "", and the UI just shows the reason line on its own.
+const SENTENCE_ABBREVIATIONS = [
+  "u.s.", "u.k.", "e.g.", "i.e.", "dr.", "mr.", "mrs.", "ms.",
+  "st.", "vs.", "etc.", "no.",
+];
+
+// Split text into sentences. A full stop only ends a sentence when
+// the next word starts with a capital, a digit or a quote, and the
+// word before it is not a common abbreviation, so "U.S. Navy" and
+// "Dr. Smith" stay in one piece.
+function splitSentences(text) {
+  const sentences = [];
+  let start = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (ch !== "." && ch !== "!" && ch !== "?") continue;
+    const isEnd = i === text.length - 1;
+    if (!isEnd) {
+      if (text[i + 1] !== " ") continue;
+      const nextChar = text[i + 2];
+      if (nextChar && !/[A-Z0-9"“(]/.test(nextChar)) continue;
+      const tail = text.slice(Math.max(0, i - 5), i + 1).toLowerCase();
+      if (SENTENCE_ABBREVIATIONS.some((abbr) => tail.endsWith(abbr))) {
+        continue;
+      }
+    }
+    sentences.push(text.slice(start, i + 1).trim());
+    start = i + 2;
+  }
+  const rest = text.slice(start).trim();
+  if (rest) sentences.push(rest);
+  return sentences.filter(Boolean);
+}
+
+export function shortenExtract(extract, maxSentences = 2, maxLength = 280) {
+  const text = (extract || "").replace(/\s+/g, " ").trim();
+  if (!text) return "";
+  const sentences = splitSentences(text);
+  let out = sentences.slice(0, maxSentences).join(" ");
+  if (!out) out = text;
+  if (out.length > maxLength) {
+    const cut = out.slice(0, maxLength);
+    const lastSpace = cut.lastIndexOf(" ");
+    out = (lastSpace > 0 ? cut.slice(0, lastSpace) : cut).trimEnd() + "…";
+  }
+  return out;
+}
+
 // A disambiguation page lists several topics that share a name,
 // it is not an article about any of them. Its extract starts
 // with "may refer to:", and its title often says so too.

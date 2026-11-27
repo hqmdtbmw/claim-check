@@ -12,6 +12,7 @@ import {
   loadHistory,
   saveHistory,
   searchQueryFallbacks,
+  shortenExtract,
   splitClaims,
   summarizeVerdict,
 } from "../claimcheck.js";
@@ -288,6 +289,60 @@ describe("explainStance", () => {
     assert.equal(explainStance({}), expected);
     assert.equal(explainStance(null), expected);
     assert.equal(explainStance(undefined), expected);
+  });
+});
+
+describe("shortenExtract", () => {
+  it("keeps the first two sentences of a longer extract", () => {
+    assert.equal(
+      shortenExtract(
+        "Apollo 11 was the American spaceflight that first landed humans on the Moon in 1969. It was launched on July 16, 1969. The crew was Neil Armstrong, Buzz Aldrin and Michael Collins."
+      ),
+      "Apollo 11 was the American spaceflight that first landed humans on the Moon in 1969. It was launched on July 16, 1969."
+    );
+  });
+
+  it("keeps a short extract whole", () => {
+    assert.equal(
+      shortenExtract("The Moon is Earth's only natural satellite."),
+      "The Moon is Earth's only natural satellite."
+    );
+  });
+
+  it("returns an empty string for a missing or blank extract", () => {
+    assert.equal(shortenExtract(""), "");
+    assert.equal(shortenExtract("   "), "");
+    assert.equal(shortenExtract(null), "");
+    assert.equal(shortenExtract(undefined), "");
+  });
+
+  it("does not split on abbreviations like U.S. or Dr.", () => {
+    assert.equal(
+      shortenExtract(
+        "The U.S. Navy was founded in 1775. It is the largest navy in the world. Dr. Smith wrote about it later."
+      ),
+      "The U.S. Navy was founded in 1775. It is the largest navy in the world."
+    );
+  });
+
+  it("cuts a long sentence at a word boundary with an ellipsis", () => {
+    const long =
+      "Apollo 11 was the American spaceflight that first landed humans on the Moon in 1969, " +
+      "and it carried a crew of three astronauts on a journey that took eight days in total, " +
+      "from launch to splashdown and back again, with two of them walking on the lunar surface " +
+      "while the third stayed in orbit around the Moon in the command module.";
+    const short = shortenExtract(long);
+    assert.ok(short.length <= 281);
+    assert.ok(short.endsWith("…"));
+    assert.ok(!short.endsWith(" …"));
+    assert.ok(short.startsWith("Apollo 11 was the American spaceflight"));
+  });
+
+  it("collapses newlines and extra spaces", () => {
+    assert.equal(
+      shortenExtract("First sentence here.\nSecond  sentence  here. Third one."),
+      "First sentence here. Second sentence here."
+    );
   });
 });
 
