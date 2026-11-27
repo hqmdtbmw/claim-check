@@ -7,7 +7,7 @@ I kept seeing wild claims in group chats and on timelines, and nobody ever check
 ## How it works
 
 1. **You paste a claim.** Anything, like "The moon landings were faked" or "Humans use only 10% of their brains". Got a few at once? Switch to "Several claims" and paste one per line. It checks them one after another and shows you a short verdict for each, with the sources tucked under it when you want to see them.
-2. **It pulls the important words out** and searches Wikipedia for the articles that cover the topic.
+2. **It pulls the important words out** and searches Wikipedia for the articles that cover the topic. If the first search finds nothing, it tries again with a shorter search, dropping words until something turns up, before giving up.
 3. **Each article gets sorted.** If it lines up with the claim, it counts as supporting. If it uses words like "myth", "debunked" or "no evidence", it counts as pushback. The rest is just background. Under every article there is a short line in plain words saying why it landed there, like which words from your claim it mentions and which pushback words it uses.
 4. **You get a verdict and the sources.** The verdict is only a guide. The linked articles are the real answer, so read them before you share the claim.
 5. **Your last few checks are saved in your browser**, so you can run one again with one click. Nothing is uploaded anywhere.
@@ -40,7 +40,7 @@ Then open http://localhost:8000. Or drop the folder on GitHub Pages, Netlify or 
 npm test
 ```
 
-The tests cover the claim analysis: pulling keywords out of a claim, sorting evidence into supporting, questioning or related, explaining each sorting in plain words, turning a set of results into a verdict, and splitting pasted text into one claim per line for batch checks. They run with plain Node, no dependencies.
+The tests cover the claim analysis: pulling keywords out of a claim, sorting evidence into supporting, questioning or related, explaining each sorting in plain words, turning a set of results into a verdict, and splitting pasted text into one claim per line for batch checks. They also cover the shorter-search retries, which try the full query first and then fewer keywords when the first search finds nothing. They run with plain Node, no dependencies.
 
 ## What it can't do yet
 

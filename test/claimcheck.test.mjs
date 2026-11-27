@@ -11,6 +11,7 @@ import {
   isDisambiguationPage,
   loadHistory,
   saveHistory,
+  searchQueryFallbacks,
   splitClaims,
   summarizeVerdict,
 } from "../claimcheck.js";
@@ -114,6 +115,42 @@ describe("buildSearchQuery", () => {
 
   it("falls back to the raw claim when there are no keywords", () => {
     assert.equal(buildSearchQuery("the"), "the");
+  });
+});
+
+describe("searchQueryFallbacks", () => {
+  it("tries the full query, then fewer keywords, then the raw claim", () => {
+    assert.deepEqual(
+      searchQueryFallbacks("The Great Wall of China is visible from space"),
+      [
+        "great wall china visible space",
+        "great wall china",
+        "great",
+        "The Great Wall of China is visible from space",
+      ]
+    );
+  });
+
+  it("drops the first-three query when it repeats the full query", () => {
+    assert.deepEqual(searchQueryFallbacks("The moon landings were faked"), [
+      "moon landings faked",
+      "moon",
+      "The moon landings were faked",
+    ]);
+  });
+
+  it("gives a single query for a one-word claim", () => {
+    assert.deepEqual(searchQueryFallbacks("Moon"), ["moon"]);
+  });
+
+  it("falls back to the raw claim when there are only stopwords", () => {
+    assert.deepEqual(searchQueryFallbacks("the and of"), ["the and of"]);
+  });
+
+  it("never contains an empty string", () => {
+    for (const claim of ["", "   ", null, "the", "Moon", "the and of"]) {
+      assert.ok(searchQueryFallbacks(claim).every((q) => q.length > 0));
+    }
   });
 });
 

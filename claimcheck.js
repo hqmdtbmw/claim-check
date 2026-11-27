@@ -60,6 +60,31 @@ export function buildSearchQuery(claim) {
   return (claim || "").trim();
 }
 
+// The searches to try for a claim, most specific first. A narrow
+// query often finds nothing, so the app tries again with fewer
+// keywords before giving up. The full keyword query comes first,
+// then the first three keywords, then the first keyword on its
+// own, then the raw claim as a last resort. Repeats are dropped
+// (a match ignores case), so a one-word claim gives one query.
+export function searchQueryFallbacks(claim) {
+  const keywords = extractKeywords(claim);
+  const raw = (claim || "").trim();
+  const candidates = [
+    buildSearchQuery(claim),
+    keywords.slice(0, 3).join(" "),
+    keywords[0] || "",
+    raw,
+  ];
+  const seen = new Set();
+  return candidates.filter((query) => {
+    if (!query) return false;
+    const key = query.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 // Words in a title that mean the article is about a depiction of
 // the topic, a film, a song or a novel, rather than the topic itself.
 const DEPICTION_WORDS = [

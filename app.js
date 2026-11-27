@@ -4,7 +4,6 @@
 
 import {
   addToHistory,
-  buildSearchQuery,
   classifyEvidence,
   decodeClaimFromHash,
   encodeClaimInHash,
@@ -13,6 +12,7 @@ import {
   isDisambiguationPage,
   loadHistory,
   saveHistory,
+  searchQueryFallbacks,
   splitClaims,
   summarizeVerdict,
 } from "./claimcheck.js";
@@ -156,8 +156,14 @@ function setLoading(loading) {
 // decides what to show.
 async function fetchAndClassify(claim) {
   const keywords = extractKeywords(claim);
-  const query = buildSearchQuery(claim);
-  const searchResults = await searchWikipedia(query);
+  let searchResults = [];
+  // Try the full query first, then shorter ones, stopping at the
+  // first that finds anything. A narrow query often misses, and a
+  // shorter one finds the article.
+  for (const query of searchQueryFallbacks(claim)) {
+    searchResults = await searchWikipedia(query);
+    if (searchResults.length > 0) break;
+  }
 
   if (searchResults.length === 0) {
     return { verdict: summarizeVerdict([]), classified: [] };
