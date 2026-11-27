@@ -15,6 +15,7 @@ import {
   shortenExtract,
   splitClaims,
   summarizeVerdict,
+  verdictTone,
 } from "../claimcheck.js";
 
 describe("extractKeywords", () => {
@@ -485,6 +486,24 @@ describe("shareable links", () => {
   });
 });
 
+describe("verdictTone", () => {
+  it("colours each verdict label by what it found", () => {
+    assert.equal(verdictTone("The evidence lines up"), "good");
+    assert.equal(verdictTone("The evidence raises doubts"), "bad");
+    assert.equal(verdictTone("Mixed picture"), "mixed");
+    assert.equal(verdictTone("Nothing found"), "none");
+    assert.equal(verdictTone("Related, but no clear answer"), "none");
+    assert.equal(verdictTone("Could not check this one"), "none");
+  });
+
+  it("stays neutral for a missing or unknown label", () => {
+    assert.equal(verdictTone(""), "none");
+    assert.equal(verdictTone(null), "none");
+    assert.equal(verdictTone(undefined), "none");
+    assert.equal(verdictTone("Something else entirely"), "none");
+  });
+});
+
 describe("history", () => {
   function fakeStorage() {
     const data = {};
@@ -546,6 +565,67 @@ describe("history", () => {
     });
     saveHistory(storage, history);
     assert.deepEqual(loadHistory(storage), history);
+  });
+
+  it("stores the verdict with the check", () => {
+    const history = addToHistory([], {
+      claim: "The moon landings were faked",
+      label: "The evidence raises doubts",
+      checkedAt: 5,
+    });
+    assert.equal(history.length, 1);
+    assert.equal(history[0].claim, "The moon landings were faked");
+    assert.equal(history[0].label, "The evidence raises doubts");
+    assert.equal(history[0].checkedAt, 5);
+  });
+
+  it("loads an old entry saved without a verdict and keeps it working", () => {
+    const storage = fakeStorage();
+    storage.setItem(
+      "claim-check-history",
+      JSON.stringify([{ claim: "old claim", checkedAt: 1 }])
+    );
+    const loaded = loadHistory(storage);
+    assert.equal(loaded.length, 1);
+    assert.equal(loaded[0].claim, "old claim");
+    assert.equal(loaded[0].label, undefined);
+    // Saving it back does not crash, and the entry is still there.
+    saveHistory(storage, loaded);
+    assert.equal(loadHistory(storage).length, 1);
+  });
+
+  it("a re-check replaces the stored verdict with the fresh one", () => {
+    const history = addToHistory(
+      [
+        {
+          claim: "The moon landings were faked",
+          label: "The evidence lines up",
+          checkedAt: 1,
+        },
+      ],
+      {
+        claim: "The moon landings were faked",
+        label: "The evidence raises doubts",
+        checkedAt: 2,
+      }
+    );
+    assert.equal(history.length, 1);
+    assert.equal(history[0].label, "The evidence raises doubts");
+    assert.equal(history[0].checkedAt, 2);
+  });
+
+  it("keeps at most eight checks even when every one has a verdict", () => {
+    let history = [];
+    for (let i = 0; i < 10; i += 1) {
+      history = addToHistory(history, {
+        claim: `claim ${i}`,
+        label: i % 2 === 0 ? "The evidence lines up" : "Mixed picture",
+        checkedAt: i,
+      });
+    }
+    assert.equal(history.length, 8);
+    assert.equal(history[0].label, "Mixed picture");
+    assert.equal(history[7].label, "The evidence lines up");
   });
 
   it("loads an empty list when nothing is saved or the data is bad", () => {

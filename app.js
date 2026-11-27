@@ -16,6 +16,7 @@ import {
   shortenExtract,
   splitClaims,
   summarizeVerdict,
+  verdictTone,
 } from "./claimcheck.js";
 
 const API =
@@ -80,7 +81,11 @@ form.addEventListener("submit", async (event) => {
 });
 
 // The recent checks list. Each row shows the claim and the verdict
-// it got, with a button to run it again.
+// it got, coloured so you can see at a glance what you found, with
+// a button to run it again. A re-check runs the live check again
+// from the claim text, it never trusts the stored verdict. An old
+// entry saved before verdicts were stored has no label, so it just
+// shows the claim on its own.
 function renderHistory() {
   const history = loadHistory(window.localStorage);
   if (!history.length) {
@@ -94,7 +99,7 @@ function renderHistory() {
       (item, i) => `
       <li>
         <span class="history-claim">${escapeHtml(item.claim)}</span>
-        <span class="history-label">${escapeHtml(item.label || "")}</span>
+        ${item.label ? `<span class="history-label tone-${verdictTone(item.label)}">${escapeHtml(item.label)}</span>` : ""}
         <button type="button" data-history-index="${i}">Check again</button>
       </li>`
     )

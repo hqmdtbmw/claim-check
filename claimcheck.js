@@ -314,6 +314,20 @@ export function decodeClaimFromHash(hash) {
   }
 }
 
+// The tone of a verdict label, so the history list can colour it:
+// green when the evidence lines up, red when it raises doubts,
+// amber when the picture is mixed, and plain grey for everything
+// else. The labels come from summarizeVerdict, plus the "could not
+// check" label a failed batch check records. An old entry with no
+// label, or a label we do not recognise, is plain grey, never an
+// error.
+export function verdictTone(label) {
+  if (label === "The evidence lines up") return "good";
+  if (label === "The evidence raises doubts") return "bad";
+  if (label === "Mixed picture") return "mixed";
+  return "none";
+}
+
 // History: the last few claims you checked, so you can run one again
 // without typing it out. It lives in the browser only, nothing
 // leaves your machine. These helpers are pure, so the tests can use

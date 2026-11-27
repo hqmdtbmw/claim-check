@@ -123,6 +123,9 @@ button[type="submit"]:disabled { opacity: 0.6; cursor: wait; }
 }
 .history-claim { font-weight: 600; }
 .history-label { font-size: 0.9rem; color: #555; }
+.history-label.tone-good { color: #0a6b2e; font-weight: 700; }
+.history-label.tone-bad { color: #a00; font-weight: 700; }
+.history-label.tone-mixed { color: #7a5c00; font-weight: 700; }
 #history-list button,
 #clear-history {
   font: inherit;
