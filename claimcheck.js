@@ -213,6 +213,39 @@ export function shortenExtract(extract, maxSentences = 2, maxLength = 280) {
   return out;
 }
 
+// When an article was last edited, in plain words, so the reader
+// can tell fresh evidence from a page nobody has touched in years.
+// Wikipedia gives the last revision as an ISO timestamp, like
+// "2026-11-25T12:34:56Z". A missing or broken timestamp gives
+// back "", and the UI just leaves the date out, never a guess.
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+export function formatUpdatedDate(timestamp) {
+  if (!timestamp || typeof timestamp !== "string") return "";
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${date.getUTCDate()} ${MONTH_NAMES[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
+}
+
+// Pull the last revision time out of a Wikipedia page object, the
+// shape fetchExtracts returns. The revisions list can be missing
+// or empty, and then there is simply no date to show.
+export function pageUpdatedAt(page) {
+  const revisions = (page && page.revisions) || [];
+  const first = revisions[0] || {};
+  return typeof first.timestamp === "string" ? first.timestamp : "";
+}
+
+// The one line a source card shows about freshness, or "" when
+// there is no date, so the caller can leave it out entirely.
+export function updatedLine(timestamp) {
+  const date = formatUpdatedDate(timestamp);
+  return date ? `Last updated ${date}` : "";
+}
+
 // A disambiguation page lists several topics that share a name,
 // it is not an article about any of them. Its extract starts
 // with "may refer to:", and its title often says so too.
@@ -312,11 +345,16 @@ export function verdictCopyLines(claim, verdict, classified) {
     verdict.detail,
     "",
     "Sources:",
-    ...(classified || []).flatMap((item) => [
-      `- ${item.title} (${item.url})`,
-      `  ${explainStance(item)}`,
-      ...(item.snippet ? [`  "${item.snippet}"`] : []),
-    ]),
+    ...(classified || []).flatMap((item) => {
+      const lines = [
+        `- ${item.title} (${item.url})`,
+        `  ${explainStance(item)}`,
+      ];
+      if (item.snippet) lines.push(`  "${item.snippet}"`);
+      const updated = updatedLine(item.updatedAt);
+      if (updated) lines.push(`  ${updated}`);
+      return lines;
+    }),
   ];
 }
 

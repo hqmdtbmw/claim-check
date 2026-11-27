@@ -13,11 +13,13 @@ import {
   extractKeywords,
   isDisambiguationPage,
   loadHistory,
+  pageUpdatedAt,
   saveHistory,
   searchQueryFallbacks,
   shortenExtract,
   splitClaims,
   summarizeVerdict,
+  updatedLine,
   verdictCopyLines,
   verdictTone,
 } from "./claimcheck.js";
@@ -189,8 +191,11 @@ async function fetchAndClassify(claim) {
     extract: page.extract,
     // The full extract decides the sorting, the short quote is
     // what the reader sees. A missing quote just leaves the
-    // reason line on its own, never an error.
+    // reason line on its own, never an error. The last revision
+    // time says how fresh the article is, and a missing one
+    // just leaves the date out.
     snippet: shortenExtract(page.extract),
+    updatedAt: pageUpdatedAt(page),
     ...classifyEvidence(page.extract, keywords, page.title),
   }));
 
@@ -278,8 +283,10 @@ async function searchWikipedia(query) {
 }
 
 async function fetchExtracts(titles) {
+  // revisions rides along on the same call, so the last edit time
+  // costs no extra request. rvlimit=1 keeps just the latest one.
   const url =
-    `${API}&action=query&prop=extracts|info&exintro&explaintext&inprop=url` +
+    `${API}&action=query&prop=extracts|info|revisions&exintro&explaintext&inprop=url&rvprop=timestamp&rvlimit=1` +
     `&titles=${encodeURIComponent(titles.join("|"))}`;
   const response = await fetch(url, {
     headers: { Accept: "application/json" },
@@ -308,10 +315,14 @@ function escapeHtml(text) {
 // Same verdict labels, same reason lines, same links. The short
 // quote from the article sits under the reason line, in small
 // muted text, so the reader sees the article's own words. When
-// there is no quote, the reason line stands on its own.
+// there is no quote, the reason line stands on its own. Under the
+// quote, the date the article was last updated, when Wikipedia
+// gives one, so the reader can tell fresh evidence from a page
+// nobody has touched in years.
 function evidenceCards(classified) {
   return classified
     .map((item) => {
+      const updated = updatedLine(item.updatedAt);
       return `
       <article class="evidence ${item.stance}">
         <header>
@@ -320,6 +331,7 @@ function evidenceCards(classified) {
         </header>
         <p class="why">${escapeHtml(explainStance(item))}</p>
         ${item.snippet ? `<p class="quote">“${escapeHtml(item.snippet)}”</p>` : ""}
+        ${updated ? `<p class="updated">${escapeHtml(updated)}</p>` : ""}
         <a href="${item.url}" target="_blank" rel="noopener">Read on Wikipedia →</a>
       </article>`;
     })

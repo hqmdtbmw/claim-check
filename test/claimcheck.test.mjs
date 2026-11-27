@@ -10,13 +10,17 @@ import {
   encodeClaimInHash,
   explainStance,
   extractKeywords,
+  formatUpdatedDate,
   isDisambiguationPage,
   loadHistory,
+  pageUpdatedAt,
   saveHistory,
   searchQueryFallbacks,
   shortenExtract,
   splitClaims,
   summarizeVerdict,
+  updatedLine,
+  verdictCopyLines,
   verdictTone,
 } from "../claimcheck.js";
 
@@ -462,6 +466,102 @@ describe("shortenExtract", () => {
       shortenExtract("First sentence here.\nSecond  sentence  here. Third one."),
       "First sentence here. Second sentence here."
     );
+  });
+});
+
+describe("formatUpdatedDate", () => {
+  it("turns a Wikipedia revision timestamp into plain words", () => {
+    assert.equal(
+      formatUpdatedDate("2026-11-25T12:34:56Z"),
+      "25 November 2026"
+    );
+  });
+
+  it("uses the calendar date, not the local time zone", () => {
+    assert.equal(formatUpdatedDate("2026-01-02T00:30:00Z"), "2 January 2026");
+    assert.equal(formatUpdatedDate("2026-12-31T23:59:59Z"), "31 December 2026");
+  });
+
+  it("returns an empty string for a missing or broken timestamp", () => {
+    assert.equal(formatUpdatedDate(""), "");
+    assert.equal(formatUpdatedDate(null), "");
+    assert.equal(formatUpdatedDate(undefined), "");
+    assert.equal(formatUpdatedDate("not a date"), "");
+    assert.equal(formatUpdatedDate(20261125), "");
+  });
+});
+
+describe("pageUpdatedAt", () => {
+  it("pulls the last revision time out of a Wikipedia page", () => {
+    assert.equal(
+      pageUpdatedAt({
+        title: "Apollo 11",
+        revisions: [{ timestamp: "2026-11-25T12:34:56Z" }],
+      }),
+      "2026-11-25T12:34:56Z"
+    );
+  });
+
+  it("gives back an empty string when there is no revision to read", () => {
+    assert.equal(pageUpdatedAt({ title: "Apollo 11" }), "");
+    assert.equal(pageUpdatedAt({ title: "Apollo 11", revisions: [] }), "");
+    assert.equal(
+      pageUpdatedAt({ title: "Apollo 11", revisions: [{}] }),
+      ""
+    );
+    assert.equal(pageUpdatedAt(null), "");
+    assert.equal(pageUpdatedAt(undefined), "");
+  });
+});
+
+describe("updatedLine", () => {
+  it("says when a source was last updated, in plain words", () => {
+    assert.equal(
+      updatedLine("2026-11-25T12:34:56Z"),
+      "Last updated 25 November 2026"
+    );
+  });
+
+  it("gives back an empty string when there is no date", () => {
+    assert.equal(updatedLine(""), "");
+    assert.equal(updatedLine(null), "");
+    assert.equal(updatedLine(undefined), "");
+    assert.equal(updatedLine("not a date"), "");
+  });
+});
+
+describe("verdictCopyLines", () => {
+  const classified = [
+    {
+      title: "Apollo 11",
+      url: "https://en.wikipedia.org/wiki/Apollo_11",
+      stance: "supports",
+      matchedKeywords: ["apollo", "moon"],
+      titleKeywords: ["apollo"],
+      signals: [],
+      snippet: "Apollo 11 landed humans on the Moon in 1969.",
+      updatedAt: "2026-11-25T12:34:56Z",
+    },
+  ];
+
+  it("includes the last updated date under a source that has one", () => {
+    const lines = verdictCopyLines(
+      "Apollo 11 landed the first humans on the Moon",
+      { label: "The evidence lines up", detail: "The sources line up." },
+      classified
+    );
+    assert.ok(lines.includes("- Apollo 11 (https://en.wikipedia.org/wiki/Apollo_11)"));
+    assert.ok(lines.includes('  "Apollo 11 landed humans on the Moon in 1969."'));
+    assert.ok(lines.includes("  Last updated 25 November 2026"));
+  });
+
+  it("leaves the date out when a source has none", () => {
+    const lines = verdictCopyLines(
+      "Apollo 11 landed the first humans on the Moon",
+      { label: "The evidence lines up", detail: "The sources line up." },
+      [{ ...classified[0], updatedAt: "" }]
+    );
+    assert.ok(!lines.some((line) => line.includes("Last updated")));
   });
 });
 
