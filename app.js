@@ -6,6 +6,7 @@ import {
   addToHistory,
   batchCopyLines,
   batchSummary,
+  checkedAgo,
   classifyEvidence,
   decodeClaimFromHash,
   decodeClaimsFromHash,
@@ -89,12 +90,14 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
-// The recent checks list. Each row shows the claim and the verdict
-// it got, coloured so you can see at a glance what you found, with
-// a button to run it again. A re-check runs the live check again
-// from the claim text, it never trusts the stored verdict. An old
-// entry saved before verdicts were stored has no label, so it just
-// shows the claim on its own.
+// The recent checks list. Each row shows the claim, the verdict
+// it got, coloured so you can see at a glance what you found, and
+// when you checked it, so a verdict from days ago reads as old
+// news next to one from five minutes ago. A re-check runs the live
+// check again from the claim text, it never trusts the stored
+// verdict. An old entry saved before verdicts were stored has no
+// label, so it just shows the claim on its own. An entry with no
+// saved time shows no age, never a wrong one.
 function renderHistory() {
   const history = loadHistory(window.localStorage);
   if (!history.length) {
@@ -104,14 +107,16 @@ function renderHistory() {
   }
   historySection.hidden = false;
   historyList.innerHTML = history
-    .map(
-      (item, i) => `
+    .map((item, i) => {
+      const age = checkedAgo(item.checkedAt);
+      return `
       <li>
         <span class="history-claim">${escapeHtml(item.claim)}</span>
         ${item.label ? `<span class="history-label tone-${verdictTone(item.label)}">${escapeHtml(item.label)}</span>` : ""}
+        ${age ? `<span class="history-time">${escapeHtml(age)}</span>` : ""}
         <button type="button" data-history-index="${i}">Check again</button>
-      </li>`
-    )
+      </li>`;
+    })
     .join("");
 }
 

@@ -502,6 +502,34 @@ export function verdictTone(label) {
   return "none";
 }
 
+// How long ago a check happened, in plain words, so the recent
+// checks list can say when each verdict was earned. A verdict
+// from three days ago is stale news next to one from five minutes
+// ago, and the reader should see that at a glance. The time is
+// passed in so the tests can pin "now" down. A missing or broken
+// timestamp gives back "", so an old entry just shows no age
+// instead of a wrong one. A time in the future counts as just now.
+export function checkedAgo(checkedAt, now = Date.now()) {
+  const when = Number(checkedAt);
+  const at = Number(now);
+  if (!Number.isFinite(when) || when <= 0 || !Number.isFinite(at)) return "";
+  const seconds = Math.floor((at - when) / 1000);
+  if (seconds < 60) return "checked just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) {
+    return `checked ${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+  }
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return `checked ${hours} hour${hours === 1 ? "" : "s"} ago`;
+  }
+  const days = Math.floor(hours / 24);
+  if (days === 1) return "checked yesterday";
+  if (days < 7) return `checked ${days} days ago`;
+  const date = formatUpdatedDate(new Date(when).toISOString());
+  return date ? `checked on ${date}` : "";
+}
+
 // History: the last few claims you checked, so you can run one again
 // without typing it out. It lives in the browser only, nothing
 // leaves your machine. These helpers are pure, so the tests can use

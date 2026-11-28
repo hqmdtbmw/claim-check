@@ -5,6 +5,7 @@ import {
   batchCopyLines,
   batchSummary,
   buildSearchQuery,
+  checkedAgo,
   classifyEvidence,
   decodeClaimFromHash,
   decodeClaimsFromHash,
@@ -1027,5 +1028,66 @@ describe("history", () => {
     assert.deepEqual(loadHistory(storage), []);
     storage.setItem("claim-check-history", JSON.stringify({ claim: "x" }));
     assert.deepEqual(loadHistory(storage), []);
+  });
+});
+
+describe("checkedAgo", () => {
+  // A fixed "now" so the ages do not move while the tests run.
+  const now = Date.UTC(2026, 10, 28, 12, 0, 0);
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+
+  it("says just now for a check made moments ago", () => {
+    assert.equal(checkedAgo(now, now), "checked just now");
+    assert.equal(checkedAgo(now - 30 * 1000, now), "checked just now");
+  });
+
+  it("says just now for a time in the future, never a negative age", () => {
+    assert.equal(checkedAgo(now + 5 * minute, now), "checked just now");
+  });
+
+  it("counts minutes, singular and plural", () => {
+    assert.equal(checkedAgo(now - 1 * minute, now), "checked 1 minute ago");
+    assert.equal(checkedAgo(now - 5 * minute, now), "checked 5 minutes ago");
+    assert.equal(checkedAgo(now - 59 * minute, now), "checked 59 minutes ago");
+  });
+
+  it("counts hours, singular and plural", () => {
+    assert.equal(checkedAgo(now - 1 * hour, now), "checked 1 hour ago");
+    assert.equal(checkedAgo(now - 3 * hour, now), "checked 3 hours ago");
+    assert.equal(checkedAgo(now - 23 * hour, now), "checked 23 hours ago");
+  });
+
+  it("says yesterday for one day ago", () => {
+    assert.equal(checkedAgo(now - 25 * hour, now), "checked yesterday");
+  });
+
+  it("counts days up to a week", () => {
+    assert.equal(checkedAgo(now - 3 * day, now), "checked 3 days ago");
+    assert.equal(checkedAgo(now - 6 * day, now), "checked 6 days ago");
+  });
+
+  it("gives the date for a check a week or more old", () => {
+    assert.equal(
+      checkedAgo(now - 8 * day, now),
+      "checked on 20 November 2026"
+    );
+    assert.equal(
+      checkedAgo(now - 40 * day, now),
+      "checked on 19 October 2026"
+    );
+  });
+
+  it("gives back nothing for a missing or broken timestamp", () => {
+    assert.equal(checkedAgo(undefined, now), "");
+    assert.equal(checkedAgo(null, now), "");
+    assert.equal(checkedAgo(0, now), "");
+    assert.equal(checkedAgo("not a time", now), "");
+    assert.equal(checkedAgo(NaN, now), "");
+  });
+
+  it("defaults to right now when no time is passed in", () => {
+    assert.equal(checkedAgo(Date.now()), "checked just now");
   });
 });
