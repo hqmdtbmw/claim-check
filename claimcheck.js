@@ -421,6 +421,16 @@ export function splitClaims(text) {
     });
 }
 
+// Ctrl+Enter (or Cmd+Enter on a Mac) runs the check from the
+// keyboard, so pasting claim after claim does not mean reaching
+// for the button each time. Plain Enter is not a shortcut: in
+// batch mode it just adds a newline, and Enter with only alt or
+// shift is left alone too.
+export function isRunShortcut(event) {
+  if (!event || event.key !== "Enter") return false;
+  return Boolean(event.ctrlKey || event.metaKey);
+}
+
 // Shareable links: a check lives in the URL hash as
 // #claim=<encoded claim>, so the link can be copied and sent to
 // someone else. Anyone opening it sees the same claim checked.

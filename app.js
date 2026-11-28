@@ -16,6 +16,7 @@ import {
   extractKeywords,
   filterSourcesByStance,
   isDisambiguationPage,
+  isRunShortcut,
   updateHistoryAges,
   loadHistory,
   pageUpdatedAt,
@@ -71,6 +72,19 @@ document.querySelectorAll("[data-example]").forEach((button) => {
     form.requestSubmit();
     input.focus();
   });
+});
+
+// Ctrl+Enter (Cmd+Enter on a Mac) runs the check from the
+// keyboard, so pasting claim after claim does not mean reaching
+// for the button each time. The box is one textarea in both
+// modes, so one listener covers single and batch. Plain Enter
+// is left alone: in batch mode it adds a newline. The form
+// submit does the work, so the shortcut and the button can
+// never drift apart.
+input.addEventListener("keydown", (event) => {
+  if (!isRunShortcut(event)) return;
+  event.preventDefault();
+  form.requestSubmit();
 });
 
 form.addEventListener("submit", async (event) => {
