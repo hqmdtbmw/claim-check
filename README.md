@@ -40,7 +40,7 @@ Then open http://localhost:8000. Or drop the folder on GitHub Pages, Netlify or 
 npm test
 ```
 
-The tests cover the claim analysis: pulling keywords out of a claim, sorting evidence into supporting, questioning or related, explaining each sorting in plain words, trimming a source extract down to a sentence or two, turning a set of results into a verdict, showing when each source was last updated, saying how long ago each recent check was made and keeping those ages fresh while the page sits open, and splitting pasted text into one claim per line for batch checks. They also cover the shorter-search retries, which try the full query first and then fewer keywords when the first search finds nothing. They run with plain Node, no dependencies.
+The tests cover the claim analysis: pulling keywords out of a claim, sorting evidence into supporting, questioning or related, explaining each sorting in plain words, trimming a source extract down to a sentence or two, turning a set of results into a verdict, showing when each source was last updated, saying how long ago each recent check was made and keeping those ages fresh while the page sits open, and splitting pasted text into one claim per line for batch checks. I also test the minute timer itself by loading the real page script behind a stub page, checking it is set for sixty seconds, that a tick only refreshes the ages and fetches nothing, and that it stops when the page goes away. They also cover the shorter-search retries, which try the full query first and then fewer keywords when the first search finds nothing. They run with plain Node, no dependencies.
 
 ## What it can't do yet
 
