@@ -7,6 +7,7 @@ import {
   batchCopyLines,
   batchSummary,
   checkedAgo,
+  claimsToCheck,
   classifyEvidence,
   decodeClaimFromHash,
   decodeClaimsFromHash,
@@ -23,7 +24,6 @@ import {
   saveHistory,
   searchQueryFallbacks,
   shortenExtract,
-  splitClaims,
   stancesPresent,
   summarizeVerdict,
   updatedLine,
@@ -89,7 +89,7 @@ input.addEventListener("keydown", (event) => {
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const claims = splitClaims(input.value);
+  const claims = claimsToCheck(input.value, batchMode);
   if (claims.length === 0) {
     setStatus(
       batchMode ? "Type at least one claim first." : "Type a claim first.",

@@ -6,6 +6,7 @@ import {
   batchSummary,
   buildSearchQuery,
   checkedAgo,
+  claimsToCheck,
   classifyEvidence,
   decodeClaimFromHash,
   decodeClaimsFromHash,
@@ -313,6 +314,62 @@ describe("splitClaims", () => {
     assert.deepEqual(splitClaims("   \n\n  "), []);
     assert.deepEqual(splitClaims(null), []);
     assert.deepEqual(splitClaims(undefined), []);
+  });
+});
+
+describe("claimsToCheck", () => {
+  it("lets a short claim through in single mode", () => {
+    assert.deepEqual(claimsToCheck("Vaccines work", false), ["Vaccines work"]);
+    assert.deepEqual(claimsToCheck("God exists", false), ["God exists"]);
+    assert.deepEqual(claimsToCheck("Aliens exist", false), ["Aliens exist"]);
+  });
+
+  it("trims a single claim", () => {
+    assert.deepEqual(claimsToCheck("  Vaccines work  ", false), [
+      "Vaccines work",
+    ]);
+  });
+
+  it("returns an empty list for empty or non-string input in single mode", () => {
+    assert.deepEqual(claimsToCheck("", false), []);
+    assert.deepEqual(claimsToCheck("   ", false), []);
+    assert.deepEqual(claimsToCheck(null, false), []);
+    assert.deepEqual(claimsToCheck(undefined, false), []);
+  });
+
+  it("still splits a pasted paragraph in single mode, short lines dropped", () => {
+    assert.deepEqual(
+      claimsToCheck(
+        "Vaccines work\nThe moon landings were faked",
+        false
+      ),
+      ["The moon landings were faked"]
+    );
+  });
+
+  it("keeps the short-line rule in batch mode", () => {
+    assert.deepEqual(
+      claimsToCheck(
+        "Vaccines work\nThe moon landings were faked",
+        true
+      ),
+      ["The moon landings were faked"]
+    );
+    assert.deepEqual(
+      claimsToCheck(
+        "The moon landings were faked\nHumans use only 10% of their brains",
+        true
+      ),
+      [
+        "The moon landings were faked",
+        "Humans use only 10% of their brains",
+      ]
+    );
+  });
+
+  it("returns an empty list for empty input in batch mode", () => {
+    assert.deepEqual(claimsToCheck("", true), []);
+    assert.deepEqual(claimsToCheck("yes\nok", true), []);
   });
 });
 

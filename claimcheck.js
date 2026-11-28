@@ -404,6 +404,22 @@ export function batchCopyLines(results) {
   return lines;
 }
 
+// What the form should check, from what is in the box. In batch
+// mode the box holds a pasted paragraph, so splitClaims drops the
+// short lines and the junk. In single mode the box holds one claim
+// the person typed on purpose, so a short one still counts:
+// "Vaccines work" is two words and a real claim, and telling the
+// person to type a claim first when they already did is just
+// wrong. A paste with more than one line still runs as a batch,
+// the same as before.
+export function claimsToCheck(text, batch) {
+  const raw = (text || "").trim();
+  if (!raw) return [];
+  if (batch) return splitClaims(text);
+  if (raw.includes("\n")) return splitClaims(text);
+  return [raw];
+}
+
 // Split pasted text into one claim per line. People usually
 // fact-check a paragraph, not a single sentence, so the batch
 // mode runs each line as its own claim. Blank lines are dropped,
