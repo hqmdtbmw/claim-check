@@ -16,6 +16,7 @@ import {
   extractKeywords,
   filterSourcesByStance,
   isDisambiguationPage,
+  updateHistoryAges,
   loadHistory,
   pageUpdatedAt,
   saveHistory,
@@ -113,7 +114,7 @@ function renderHistory() {
       <li>
         <span class="history-claim">${escapeHtml(item.claim)}</span>
         ${item.label ? `<span class="history-label tone-${verdictTone(item.label)}">${escapeHtml(item.label)}</span>` : ""}
-        ${age ? `<span class="history-time">${escapeHtml(age)}</span>` : ""}
+        ${age ? `<span class="history-time" data-checked-at="${item.checkedAt}">${escapeHtml(age)}</span>` : ""}
         <button type="button" data-history-index="${i}">Check again</button>
       </li>`;
     })
@@ -129,6 +130,18 @@ function recordHistory(claim, label) {
   saveHistory(window.localStorage, history);
   renderHistory();
 }
+
+// The ages under recent checks go stale while the page sits open,
+// so this refreshes just the age text once a minute. It works out
+// the age again from the time saved on each row, nothing is
+// re-checked and nothing is fetched. The timer stops when the page
+// goes away.
+function refreshHistoryAges() {
+  updateHistoryAges(historyList.querySelectorAll(".history-time"));
+}
+
+const historyAgeTimer = setInterval(refreshHistoryAges, 60 * 1000);
+window.addEventListener("pagehide", () => clearInterval(historyAgeTimer));
 
 historyList.addEventListener("click", (event) => {
   const button = event.target.closest("[data-history-index]");

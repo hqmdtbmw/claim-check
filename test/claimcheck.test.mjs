@@ -24,6 +24,7 @@ import {
   splitClaims,
   stancesPresent,
   summarizeVerdict,
+  updateHistoryAges,
   updatedLine,
   verdictCopyLines,
   verdictTone,
@@ -1043,6 +1044,11 @@ describe("checkedAgo", () => {
     assert.equal(checkedAgo(now - 30 * 1000, now), "checked just now");
   });
 
+  it("ticks over from just now to 1 minute ago at sixty seconds", () => {
+    assert.equal(checkedAgo(now - 59 * 1000, now), "checked just now");
+    assert.equal(checkedAgo(now - 60 * 1000, now), "checked 1 minute ago");
+  });
+
   it("says just now for a time in the future, never a negative age", () => {
     assert.equal(checkedAgo(now + 5 * minute, now), "checked just now");
   });
@@ -1089,5 +1095,48 @@ describe("checkedAgo", () => {
 
   it("defaults to right now when no time is passed in", () => {
     assert.equal(checkedAgo(Date.now()), "checked just now");
+  });
+});
+
+describe("updateHistoryAges", () => {
+  // A fixed "now" so the ages do not move while the tests run.
+  // Fake rows shaped like the age spans the page renders, with
+  // the saved check time on dataset.checkedAt.
+  const now = Date.UTC(2026, 10, 28, 12, 0, 0);
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const fakeSpan = (checkedAt, text) => ({
+    dataset: { checkedAt: String(checkedAt) },
+    textContent: text,
+  });
+
+  it("ticks an age from just now to 1 minute ago as time passes", () => {
+    const span = fakeSpan(now, "checked just now");
+    assert.equal(updateHistoryAges([span], now + 1 * minute), 1);
+    assert.equal(span.textContent, "checked 1 minute ago");
+  });
+
+  it("updates every row at once, minutes and hours alike", () => {
+    const spans = [
+      fakeSpan(now - 5 * minute, "checked just now"),
+      fakeSpan(now - 2 * hour, "checked 1 hour ago"),
+    ];
+    assert.equal(updateHistoryAges(spans, now), 2);
+    assert.equal(spans[0].textContent, "checked 5 minutes ago");
+    assert.equal(spans[1].textContent, "checked 2 hours ago");
+  });
+
+  it("leaves a row with no saved time alone, and does not count it", () => {
+    const good = fakeSpan(now - 3 * minute, "checked just now");
+    const broken = { dataset: {}, textContent: "checked just now" };
+    assert.equal(updateHistoryAges([good, broken], now), 1);
+    assert.equal(good.textContent, "checked 3 minutes ago");
+    assert.equal(broken.textContent, "checked just now");
+  });
+
+  it("updates nothing for an empty list", () => {
+    assert.equal(updateHistoryAges([], now), 0);
+    assert.equal(updateHistoryAges(null, now), 0);
+    assert.equal(updateHistoryAges(undefined, now), 0);
   });
 });

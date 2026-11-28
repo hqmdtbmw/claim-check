@@ -530,6 +530,26 @@ export function checkedAgo(checkedAt, now = Date.now()) {
   return date ? `checked on ${date}` : "";
 }
 
+// Refresh the age text on the recent checks rows, in place, so the
+// page can update them while it sits open without re-rendering the
+// list or re-checking anything. Each row carries its saved check
+// time in a data-checked-at attribute, and the fresh age is worked
+// out from that, so a row with no saved time is left alone instead
+// of getting a wrong age. It takes span-like objects with a
+// dataset.checkedAt and a textContent, so the tests can use fake
+// rows instead of a real browser, and it gives back how many rows
+// it updated. The time is passed in so the tests can pin "now" down.
+export function updateHistoryAges(spans, now = Date.now()) {
+  let updated = 0;
+  for (const span of spans || []) {
+    const age = checkedAgo(Number(span?.dataset?.checkedAt), now);
+    if (!age) continue;
+    span.textContent = age;
+    updated += 1;
+  }
+  return updated;
+}
+
 // History: the last few claims you checked, so you can run one again
 // without typing it out. It lives in the browser only, nothing
 // leaves your machine. These helpers are pure, so the tests can use
