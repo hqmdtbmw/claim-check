@@ -8,7 +8,9 @@ import {
   batchSummary,
   classifyEvidence,
   decodeClaimFromHash,
+  decodeClaimsFromHash,
   encodeClaimInHash,
+  encodeClaimsInHash,
   explainStance,
   extractKeywords,
   filterSourcesByStance,
@@ -141,12 +143,23 @@ clearHistoryButton.addEventListener("click", () => {
 
 renderHistory();
 
-// If the link carried a claim, it wins over whatever is typed in.
-// Fill the input and run the check straight away.
-const sharedClaim = decodeClaimFromHash(window.location.hash);
-if (sharedClaim) {
-  input.value = sharedClaim;
-  checkClaim(sharedClaim);
+// If the link carried claims, they win over whatever is typed in.
+// A batch link fills the box and runs the batch straight away;
+// a single claim fills it and runs the single check, as before.
+const sharedClaims = decodeClaimsFromHash(window.location.hash);
+if (sharedClaims.length > 1) {
+  setMode(true);
+  input.value = sharedClaims.join("\n");
+  checkBatch(sharedClaims);
+} else if (sharedClaims.length === 1) {
+  input.value = sharedClaims[0];
+  checkClaim(sharedClaims[0]);
+} else {
+  const sharedClaim = decodeClaimFromHash(window.location.hash);
+  if (sharedClaim) {
+    input.value = sharedClaim;
+    checkClaim(sharedClaim);
+  }
 }
 
 function setStatus(message, isError = false) {
@@ -236,9 +249,14 @@ async function checkBatch(claims) {
   setLoading(true);
   resultsEl.innerHTML = "";
 
-  // A batch has no single claim to share, so clear any old
-  // #claim link out of the address bar.
-  history.replaceState(null, "", window.location.pathname);
+  // Put the whole batch in the address bar so the link can be
+  // shared, the same as a single claim. replaceState keeps it
+  // out of the back button history.
+  history.replaceState(
+    null,
+    "",
+    encodeClaimsInHash(claims) || window.location.pathname
+  );
 
   const results = [];
   try {
@@ -478,7 +496,7 @@ function renderBatch(results) {
     </section>
     ${items}
     <p class="disclaimer">Wikipedia is a starting point, not a judge. The verdicts above are just a guide, the sources are the real answer. Read them before you share the claims.</p>
-    <p class="share-hint">A batch has no single shareable link. Check a claim on its own if you want to send it to someone.</p>
+    <p class="share-hint">Want to send these checks to someone? The link in your address bar already holds the whole batch, just copy it and send it.</p>
     <p><button type="button" id="copy-verdict">Copy all the verdicts</button></p>`;
 
   const lines = batchCopyLines(results);

@@ -451,6 +451,43 @@ export function decodeClaimFromHash(hash) {
   }
 }
 
+// Shareable links for a batch: the whole list of claims lives in
+// the URL hash as #claims=<encoded JSON list>, so a copied link
+// re-opens the same batch. JSON keeps commas, quotes and line
+// breaks inside a claim intact, and encodeURIComponent keeps the
+// JSON URL-safe. A single-claim #claim= link is a different
+// parameter, so the two never step on each other.
+
+export const HASH_CLAIMS_PARAM = "claims";
+
+export function encodeClaimsInHash(claims) {
+  const clean = (claims || [])
+    .filter((claim) => typeof claim === "string")
+    .map((claim) => claim.trim())
+    .filter(Boolean);
+  if (clean.length === 0) return "";
+  return `#${HASH_CLAIMS_PARAM}=${encodeURIComponent(JSON.stringify(clean))}`;
+}
+
+// Pull a batch back out of a hash. Returns [] when there is no
+// batch in it, the hash is empty, or the encoding is broken.
+export function decodeClaimsFromHash(hash) {
+  if (!hash || typeof hash !== "string") return [];
+  try {
+    const raw = hash.startsWith("#") ? hash.slice(1) : hash;
+    const value = new URLSearchParams(raw).get(HASH_CLAIMS_PARAM);
+    if (!value) return [];
+    const parsed = JSON.parse(value);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((claim) => typeof claim === "string")
+      .map((claim) => claim.trim())
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
 // The tone of a verdict label, so the history list can colour it:
 // green when the evidence lines up, red when it raises doubts,
 // amber when the picture is mixed, and plain grey for everything

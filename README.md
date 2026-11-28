@@ -12,11 +12,11 @@ I kept seeing wild claims in group chats and on timelines, and nobody ever check
 4. **You get a verdict and the sources.** The verdict is only a guide. The linked articles are the real answer, so read them before you share the claim.
 5. **Your last few checks are saved in your browser**, so you can run one again with one click. Each one shows the verdict it got, coloured so you can see at a glance what you found: green when the evidence lined up, red when it raised doubts, amber when the picture was mixed. The verdict shown is only what that check found at the time. Checking again runs the live check from scratch, it never trusts the old verdict. Nothing is uploaded anywhere.
 
-You can share a check too. When you check a claim, the link in your address bar holds the claim, so just copy it and send it. Anyone opening the link sees the same claim checked.
+You can share a check too. When you check a claim, the link in your address bar holds the claim, so just copy it and send it. Anyone opening the link sees the same claim checked. A batch works the same way, the link holds every claim in it.
 
 ## Checking a few at once
 
-I usually check claims one at a time, but a paragraph someone forwarded has five claims in it, not one. So there is a batch mode. Flip the toggle above the box to "Several claims", paste one claim per line, and it runs through them in order. You get a short list: each claim, its verdict, and the sources if you open it up. At the top it sums up the batch in one line, like how many look right and how many found nothing, so you can see the shape of it before opening any claim. The copy button copies all of them at once, with that summary line at the top, and each claim lands in your recent checks on its own. A batch has no shareable link, since the link only holds one claim. Check a claim on its own if you want to send it to someone.
+I usually check claims one at a time, but a paragraph someone forwarded has five claims in it, not one. So there is a batch mode. Flip the toggle above the box to "Several claims", paste one claim per line, and it runs through them in order. You get a short list: each claim, its verdict, and the sources if you open it up. At the top it sums up the batch in one line, like how many look right and how many found nothing, so you can see the shape of it before opening any claim. The copy button copies all of them at once, with that summary line at the top, and each claim lands in your recent checks on its own. The link holds the whole batch too. When you check a few claims at once, the address bar holds all of them, so you can copy the link and send it, and anyone opening it sees the same batch checked.
 
 ## Run it
 

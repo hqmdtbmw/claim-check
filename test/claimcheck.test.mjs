@@ -7,7 +7,9 @@ import {
   buildSearchQuery,
   classifyEvidence,
   decodeClaimFromHash,
+  decodeClaimsFromHash,
   encodeClaimInHash,
+  encodeClaimsInHash,
   explainStance,
   extractKeywords,
   filterSourcesByStance,
@@ -784,6 +786,95 @@ describe("shareable links", () => {
 
   it("does not crash on broken percent encoding", () => {
     assert.equal(decodeClaimFromHash("#claim=100%25%"), "100%%");
+  });
+});
+
+describe("shareable batch links", () => {
+  it("encodes a batch into a hash and decodes it back", () => {
+    const claims = [
+      "The moon landings were faked",
+      "Humans use only 10% of their brains",
+      "Apollo 11 landed the first humans on the Moon",
+    ];
+    const hash = encodeClaimsInHash(claims);
+    assert.ok(hash.startsWith("#claims="));
+    assert.deepEqual(decodeClaimsFromHash(hash), claims);
+  });
+
+  it("keeps commas, quotes and line breaks inside a claim intact", () => {
+    const claims = [
+      "Fish & chips, the £5 kind, cost more in 2024, or so they say",
+      'He said "the moon landings were faked", and meant it',
+      "First line of a claim\nsecond line of the same claim",
+      "Is 5 > 3 and 2 < 4? What is 2 + 2 = 4, really?",
+    ];
+    assert.deepEqual(
+      decodeClaimsFromHash(encodeClaimsInHash(claims)),
+      claims
+    );
+  });
+
+  it("trims each claim and drops empty ones", () => {
+    assert.deepEqual(
+      decodeClaimsFromHash(
+        encodeClaimsInHash([
+          "  The moon landings were faked  ",
+          "   ",
+          "",
+          "Humans use only 10% of their brains",
+        ])
+      ),
+      [
+        "The moon landings were faked",
+        "Humans use only 10% of their brains",
+      ]
+    );
+  });
+
+  it("returns an empty hash for an empty or blank-only batch", () => {
+    assert.equal(encodeClaimsInHash([]), "");
+    assert.equal(encodeClaimsInHash(["", "   "]), "");
+    assert.equal(encodeClaimsInHash(null), "");
+    assert.equal(encodeClaimsInHash(undefined), "");
+  });
+
+  it("returns an empty list when the hash has no batch in it", () => {
+    assert.deepEqual(decodeClaimsFromHash(""), []);
+    assert.deepEqual(decodeClaimsFromHash("#"), []);
+    assert.deepEqual(decodeClaimsFromHash("#foo=bar"), []);
+    assert.deepEqual(decodeClaimsFromHash(null), []);
+    assert.deepEqual(decodeClaimsFromHash(undefined), []);
+  });
+
+  it("returns an empty list for a garbled batch hash, never throws", () => {
+    assert.deepEqual(decodeClaimsFromHash("#claims=not json"), []);
+    assert.deepEqual(decodeClaimsFromHash("#claims=%"), []);
+    assert.deepEqual(decodeClaimsFromHash("#claims={}"), []);
+    assert.deepEqual(decodeClaimsFromHash("#claims=123"), []);
+    assert.deepEqual(decodeClaimsFromHash("#claims=[1,2,3]"), []);
+    assert.deepEqual(decodeClaimsFromHash("#claims=%5B"), []);
+  });
+
+  it("a single-claim hash is not a batch, and still decodes as before", () => {
+    const claim = "The moon landings were faked";
+    const singleHash = encodeClaimInHash(claim);
+    assert.equal(decodeClaimFromHash(singleHash), claim);
+    assert.deepEqual(decodeClaimsFromHash(singleHash), []);
+  });
+
+  it("a batch hash does not decode as a single claim", () => {
+    const batchHash = encodeClaimsInHash([
+      "The moon landings were faked",
+      "Humans use only 10% of their brains",
+    ]);
+    assert.equal(decodeClaimFromHash(batchHash), "");
+  });
+
+  it("drops non-string entries instead of crashing", () => {
+    assert.deepEqual(
+      decodeClaimsFromHash(encodeClaimsInHash(["a real claim here", 5, null])),
+      ["a real claim here"]
+    );
   });
 });
 
