@@ -161,6 +161,34 @@ export function explainStance(result) {
   return "This is background only: it never mentions the claim's key words, and nothing in it pushes back either.";
 }
 
+// The stances a source can have, in the order the filter buttons
+// show them: the support first, then the pushback, then the
+// background.
+export const SOURCE_STANCES = ["supports", "questions", "related"];
+
+// Keep only the sources with the stance asked for, so the reader
+// can look at just the pushback or just the support. "all", an
+// unknown stance or a missing one gives back everything, so the
+// filter can never hide the whole list by mistake. The copied
+// verdict text does not use this, it always copies every source.
+export function filterSourcesByStance(sources, stance) {
+  const list = sources || [];
+  if (SOURCE_STANCES.includes(stance)) {
+    return list.filter((item) => item && item.stance === stance);
+  }
+  return [...list];
+}
+
+// Which stances show up in a sources list, in button order, so
+// the UI can show a count on each filter button or leave out a
+// stance with nothing in it.
+export function stancesPresent(sources) {
+  const list = sources || [];
+  return SOURCE_STANCES.filter((stance) =>
+    list.some((item) => item && item.stance === stance)
+  );
+}
+
 // Shorten a source extract to the first one or two sentences, so
 // the reader sees the article's own words under the reason line
 // without a wall of text. A long sentence is cut at a word

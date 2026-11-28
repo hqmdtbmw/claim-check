@@ -11,6 +11,7 @@ import {
   encodeClaimInHash,
   explainStance,
   extractKeywords,
+  filterSourcesByStance,
   isDisambiguationPage,
   loadHistory,
   pageUpdatedAt,
@@ -18,6 +19,7 @@ import {
   searchQueryFallbacks,
   shortenExtract,
   splitClaims,
+  stancesPresent,
   summarizeVerdict,
   updatedLine,
   verdictCopyLines,
@@ -318,9 +320,14 @@ function escapeHtml(text) {
 // there is no quote, the reason line stands on its own. Under the
 // quote, the date the article was last updated, when Wikipedia
 // gives one, so the reader can tell fresh evidence from a page
-// nobody has touched in years.
-function evidenceCards(classified) {
-  return classified
+// nobody has touched in years. The stance filter only changes
+// which cards show, it never changes the cards themselves.
+function evidenceCards(classified, stance = "all") {
+  const shown = filterSourcesByStance(classified, stance);
+  if (shown.length === 0) {
+    return `<p class="no-sources">No sources in this group.</p>`;
+  }
+  return shown
     .map((item) => {
       const updated = updatedLine(item.updatedAt);
       return `
@@ -337,6 +344,64 @@ function evidenceCards(classified) {
     })
     .join("");
 }
+
+// The filter buttons above a set of sources: All, Supporting,
+// Questioning, Background, each with how many sources it holds.
+// A stance with no sources in it is greyed out, so clicking it
+// can never leave an empty list. Each set of sources gets its
+// own buttons, so a batch result filters on its own. The buttons
+// are rebuilt with every new check, so the filter always starts
+// back on All. The copy button reads the full list, never the
+// filtered one, so what you copy is not affected by the filter.
+const SOURCE_FILTERS = [
+  { stance: "all", label: "All" },
+  { stance: "supports", label: "Supporting" },
+  { stance: "questions", label: "Questioning" },
+  { stance: "related", label: "Background" },
+];
+
+// The full source list behind each filter group, keyed by the
+// group id the buttons carry, so a click can re-render just
+// that group's cards from the unfiltered list.
+const evidenceGroups = new Map();
+
+function evidenceGroup(classified, groupId) {
+  if (classified.length === 0) return "";
+  evidenceGroups.set(groupId, classified);
+  const present = stancesPresent(classified);
+  const buttons = SOURCE_FILTERS.map(({ stance, label }) => {
+    const count = filterSourcesByStance(classified, stance).length;
+    const disabled = stance !== "all" && !present.includes(stance);
+    return `<button type="button" data-filter-group="${groupId}" data-stance="${stance}" aria-pressed="${stance === "all"}" ${disabled ? "disabled" : ""}>${label} (${count})</button>`;
+  }).join("");
+  return `
+    <div class="source-filters" role="group" aria-label="Show only some sources">
+      ${buttons}
+    </div>
+    <div class="evidence-list" data-evidence-group="${groupId}">
+      ${evidenceCards(classified)}
+    </div>`;
+}
+
+// One listener for every filter button on the page, old and new.
+// The buttons are rebuilt with each render, so listening on the
+// results container catches them all without rewiring.
+resultsEl.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-stance]");
+  if (!button || button.disabled) return;
+  const groupId = button.dataset.filterGroup;
+  const list = resultsEl.querySelector(
+    `[data-evidence-group="${groupId}"]`
+  );
+  const classified = evidenceGroups.get(groupId);
+  if (!list || !classified) return;
+  resultsEl
+    .querySelectorAll(`[data-filter-group="${groupId}"]`)
+    .forEach((other) => {
+      other.setAttribute("aria-pressed", String(other === button));
+    });
+  list.innerHTML = evidenceCards(classified, button.dataset.stance);
+});
 
 function wireCopyButton(button, lines, idleLabel) {
   if (!button) return;
@@ -356,6 +421,7 @@ function wireCopyButton(button, lines, idleLabel) {
 function renderVerdict(claim, verdict, classified) {
   const supports = classified.filter((r) => r.stance === "supports").length;
   const questions = classified.filter((r) => r.stance === "questions").length;
+  evidenceGroups.clear();
 
   resultsEl.innerHTML = `
     <section class="verdict" aria-live="polite">
@@ -364,7 +430,7 @@ function renderVerdict(claim, verdict, classified) {
       <p>${escapeHtml(verdict.detail)}</p>
       <p class="counts">${supports} source${supports === 1 ? "" : "s"} line up · ${questions} push back · ${classified.length} checked</p>
     </section>
-    ${evidenceCards(classified)}
+    ${evidenceGroup(classified, "single")}
     <p class="disclaimer">Wikipedia is a starting point, not a judge. The verdict above is just a guide, the sources are the real answer. Read them before you share the claim.</p>
     <p class="share-hint">Want to send this check to someone? The link in your address bar already holds the claim, just copy it and send it.</p>
     <p><button type="button" id="copy-verdict">Copy the verdict</button></p>`;
@@ -388,6 +454,7 @@ function renderBatch(results) {
     (n, r) => n + r.classified.filter((c) => c.stance === "questions").length,
     0
   );
+  evidenceGroups.clear();
 
   const items = results
     .map((result, i) => {
@@ -398,7 +465,7 @@ function renderBatch(results) {
           <span class="batch-verdict">${escapeHtml(result.verdict.label)}</span>
         </summary>
         <p>${escapeHtml(result.verdict.detail)}</p>
-        ${evidenceCards(result.classified)}
+        ${evidenceGroup(result.classified, `batch-${i}`)}
       </details>`;
     })
     .join("");

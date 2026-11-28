@@ -10,6 +10,7 @@ import {
   encodeClaimInHash,
   explainStance,
   extractKeywords,
+  filterSourcesByStance,
   formatUpdatedDate,
   isDisambiguationPage,
   loadHistory,
@@ -18,6 +19,7 @@ import {
   searchQueryFallbacks,
   shortenExtract,
   splitClaims,
+  stancesPresent,
   summarizeVerdict,
   updatedLine,
   verdictCopyLines,
@@ -51,6 +53,87 @@ describe("extractKeywords", () => {
     assert.deepEqual(extractKeywords(""), []);
     assert.deepEqual(extractKeywords("the and of"), []);
     assert.deepEqual(extractKeywords(null), []);
+  });
+});
+
+describe("filterSourcesByStance", () => {
+  const sources = [
+    { title: "Apollo 11", stance: "supports" },
+    { title: "Moon landing conspiracy theories", stance: "questions" },
+    { title: "Moon", stance: "related" },
+    { title: "Apollo 13", stance: "supports" },
+  ];
+
+  it("keeps only the sources that support the claim", () => {
+    assert.deepEqual(filterSourcesByStance(sources, "supports"), [
+      { title: "Apollo 11", stance: "supports" },
+      { title: "Apollo 13", stance: "supports" },
+    ]);
+  });
+
+  it("keeps only the sources that push back on the claim", () => {
+    assert.deepEqual(filterSourcesByStance(sources, "questions"), [
+      { title: "Moon landing conspiracy theories", stance: "questions" },
+    ]);
+  });
+
+  it("keeps only the background sources", () => {
+    assert.deepEqual(filterSourcesByStance(sources, "related"), [
+      { title: "Moon", stance: "related" },
+    ]);
+  });
+
+  it("returns everything for All", () => {
+    assert.deepEqual(filterSourcesByStance(sources, "all"), sources);
+  });
+
+  it("returns everything for an unknown stance", () => {
+    assert.deepEqual(filterSourcesByStance(sources, "maybe"), sources);
+    assert.deepEqual(filterSourcesByStance(sources, ""), sources);
+    assert.deepEqual(filterSourcesByStance(sources, null), sources);
+    assert.deepEqual(filterSourcesByStance(sources, undefined), sources);
+  });
+
+  it("returns an empty list for an empty list, whatever the stance", () => {
+    assert.deepEqual(filterSourcesByStance([], "supports"), []);
+    assert.deepEqual(filterSourcesByStance([], "questions"), []);
+    assert.deepEqual(filterSourcesByStance([], "related"), []);
+    assert.deepEqual(filterSourcesByStance([], "all"), []);
+    assert.deepEqual(filterSourcesByStance(null, "supports"), []);
+    assert.deepEqual(filterSourcesByStance(undefined, "all"), []);
+  });
+});
+
+describe("stancesPresent", () => {
+  it("lists the stances in a mixed set of sources, in button order", () => {
+    assert.deepEqual(
+      stancesPresent([
+        { stance: "related" },
+        { stance: "supports" },
+        { stance: "questions" },
+      ]),
+      ["supports", "questions", "related"]
+    );
+  });
+
+  it("leaves out a stance with no sources in it", () => {
+    assert.deepEqual(
+      stancesPresent([{ stance: "questions" }, { stance: "related" }]),
+      ["questions", "related"]
+    );
+  });
+
+  it("ignores sources with no stance or an unknown one", () => {
+    assert.deepEqual(
+      stancesPresent([{ stance: "supports" }, {}, { stance: "maybe" }]),
+      ["supports"]
+    );
+  });
+
+  it("returns an empty list for an empty list", () => {
+    assert.deepEqual(stancesPresent([]), []);
+    assert.deepEqual(stancesPresent(null), []);
+    assert.deepEqual(stancesPresent(undefined), []);
   });
 });
 
